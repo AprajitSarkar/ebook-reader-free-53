@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Search, BookOpen, Heart, Settings } from "lucide-react";
+import { Search, BookOpen, Heart, Settings } from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -13,13 +13,13 @@ const Navbar = () => {
     <nav className="fixed bottom-6 w-full z-50 flex justify-center">
       <div className="glass-card flex items-center justify-around px-6 py-4 gap-4 sm:gap-8 animate-fade-in">
         <button 
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/poems")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/") ? "text-primary" : "text-foreground/80 hover:text-primary" 
+            isActive("/poems") ? "text-primary" : "text-foreground/80 hover:text-primary" 
           }`}
         >
-          <Home size={20} />
-          <span className="text-xs">Home</span>
+          <BookOpen size={20} />
+          <span className="text-xs">Poems</span>
         </button>
         
         <button 
@@ -30,16 +30,6 @@ const Navbar = () => {
         >
           <Search size={20} />
           <span className="text-xs">Search</span>
-        </button>
-        
-        <button 
-          onClick={() => navigate("/poems")}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/poems") ? "text-primary" : "text-foreground/80 hover:text-primary" 
-          }`}
-        >
-          <BookOpen size={20} />
-          <span className="text-xs">Poems</span>
         </button>
         
         <button 

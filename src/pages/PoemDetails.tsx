@@ -10,24 +10,29 @@ import { Button } from "@/components/ui/button";
 import { translationService } from "@/services/translationService";
 import { speechService } from "@/services/speechService";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
+import { Input } from "@/components/ui/input";
 
 const PoemDetails = () => {
   const [poem, setPoem] = useState<Poem | null>(null);
   const [translatedPoem, setTranslatedPoem] = useState<Poem | null>(null);
   const [isTranslated, setIsTranslated] = useState(false);
   const [translationLanguage, setTranslationLanguage] = useState<string>("");
+  const [languageSearch, setLanguageSearch] = useState("");
   const [isReading, setIsReading] = useState(false);
   const { settings } = useUserSettings();
   const navigate = useNavigate();
 
-  const languages = translationService.getAvailableLanguages();
+  const allLanguages = translationService.getAvailableLanguages();
+  const filteredLanguages = allLanguages.filter(lang => 
+    lang.name.toLowerCase().includes(languageSearch.toLowerCase())
+  );
 
   useEffect(() => {
     const storedPoem = sessionStorage.getItem("selectedPoem");
     if (storedPoem) {
       setPoem(JSON.parse(storedPoem));
     } else {
-      navigate("/");
+      navigate("/poems");
     }
     
     // Set default translation language from user settings
@@ -66,6 +71,8 @@ const PoemDetails = () => {
     if (!poem || !translationLanguage) return;
     
     try {
+      toast.info(`Translating to ${translationLanguage}...`);
+      
       // Translate the title
       const translatedTitle = await translationService.translateText(
         poem.title,
@@ -89,7 +96,7 @@ const PoemDetails = () => {
       setTranslatedPoem(translatedPoemObj);
       setIsTranslated(true);
       
-      const languageName = languages.find(l => l.code === translationLanguage)?.name || translationLanguage;
+      const languageName = allLanguages.find(l => l.code === translationLanguage)?.name || translationLanguage;
       toast.success(`Poem translated to ${languageName}`);
     } catch (error) {
       console.error("Translation error:", error);
@@ -162,62 +169,70 @@ const PoemDetails = () => {
         </button>
       </div>
 
-      <div className="mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="flex items-center gap-2">
-          <Globe size={18} />
-          <span className="text-sm">Translate to:</span>
+      <div className="mb-8 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex items-center gap-2">
+            <Globe size={18} />
+            <span className="text-sm">Translate to:</span>
+          </div>
+          
+          <div className="flex gap-2 items-center flex-1">
+            <Input
+              className="max-w-xs"
+              placeholder="Search languages..."
+              value={languageSearch}
+              onChange={(e) => setLanguageSearch(e.target.value)}
+            />
+          </div>
         </div>
         
-        <div className="flex gap-2 items-center flex-1">
-          <Select
-            value={translationLanguage}
-            onValueChange={setTranslationLanguage}
-          >
-            <SelectTrigger className="w-full max-w-xs">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map(lang => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 mb-4">
+          {filteredLanguages.map((lang) => (
+            <Button
+              key={lang.code}
+              size="sm"
+              variant={translationLanguage === lang.code ? "default" : "outline"}
+              onClick={() => setTranslationLanguage(lang.code)}
+            >
+              {lang.name}
+            </Button>
+          ))}
+        </div>
+        
+        <div className="flex justify-between items-center">
           {isTranslated ? (
             <Button variant="outline" onClick={resetTranslation}>
-              Original
+              Show Original
             </Button>
           ) : (
             <Button onClick={translatePoem} disabled={!translationLanguage}>
               Translate
             </Button>
           )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {isReading ? (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={stopReading} 
-              className="flex items-center gap-1"
-            >
-              <MicOff size={16} />
-              <span>Stop</span>
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={readPoem} 
-              className="flex items-center gap-1"
-            >
-              <Mic size={16} />
-              <span>Read Aloud</span>
-            </Button>
-          )}
+          
+          <div className="flex items-center gap-2">
+            {isReading ? (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={stopReading} 
+                className="flex items-center gap-1"
+              >
+                <MicOff size={16} />
+                <span>Stop</span>
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={readPoem} 
+                className="flex items-center gap-1"
+              >
+                <Mic size={16} />
+                <span>Read Aloud</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

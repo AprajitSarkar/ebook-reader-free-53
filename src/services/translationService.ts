@@ -12,8 +12,9 @@ export const translationService = {
       // In a real app, you would connect to a translation API like Google Translate
       console.log(`Translating to ${targetLanguage}`);
       
-      // Mock translation - in production, replace with actual API call
-      return `${text} (Translated to ${targetLanguage})`;
+      // Mock translation with better format
+      // In a real app, replace this with an actual API call
+      return `${text}`;
       
       /* Example of real implementation with Google Translate API
       const response = await fetch(

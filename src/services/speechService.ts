@@ -19,6 +19,19 @@ export const speechService = {
     
     if (voice) {
       utterance.voice = voice;
+    } else {
+      // If no voice is provided, try to find a female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(v => 
+        v.name.toLowerCase().includes("female") || 
+        v.name.toLowerCase().includes("woman") || 
+        v.name.includes("f") ||
+        v.name.toLowerCase().includes("girl")
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
     }
     
     window.speechSynthesis.speak(utterance);
@@ -37,10 +50,25 @@ export const speechService = {
 
     const systemVoices = window.speechSynthesis.getVoices();
     
-    return systemVoices.map(voice => ({
-      id: voice.voiceURI,
-      name: voice.name,
-      gender: voice.name.toLowerCase().includes("female") ? "female" : "male"
-    }));
+    return systemVoices.map(voice => {
+      // Determine gender - try to be more accurate
+      let gender: "male" | "female" = "male";
+      
+      const nameLower = voice.name.toLowerCase();
+      if (
+        nameLower.includes("female") || 
+        nameLower.includes("woman") || 
+        nameLower.includes("girl") ||
+        (nameLower.includes("f") && !nameLower.includes("male"))
+      ) {
+        gender = "female";
+      }
+      
+      return {
+        id: voice.voiceURI,
+        name: voice.name,
+        gender: gender
+      };
+    });
   }
 };
