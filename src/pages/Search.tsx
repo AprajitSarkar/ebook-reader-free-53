@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { poetryService, Poem } from "@/services/poetryService";
 import SearchBar from "@/components/SearchBar";
@@ -13,6 +14,9 @@ const Search = () => {
   const [results, setResults] = useState<Poem[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState("");
   const navigate = useNavigate();
 
   const handleSearch = async (query: string) => {
@@ -47,6 +51,67 @@ const Search = () => {
     }
   };
 
+  const fetchSuggestions = async (query: string) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    setLoadingSuggestions(true);
+    
+    try {
+      let suggestionResults: string[] = [];
+      
+      switch (searchType) {
+        case "title":
+          const titleResult = await poetryService.getTitles();
+          suggestionResults = titleResult.titles
+            .filter(title => title.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 5);
+          break;
+        case "author":
+          const authorResult = await poetryService.getAuthors();
+          suggestionResults = authorResult.authors
+            .filter(author => author.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 5);
+          break;
+        case "lines":
+          // For lines search, we don't have a pre-existing list, so let's just show the current query
+          suggestionResults = [query];
+          break;
+      }
+      
+      setSuggestions(suggestionResults);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handle query changes with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (currentQuery) {
+        fetchSuggestions(currentQuery);
+      } else {
+        setSuggestions([]);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [currentQuery, searchType]);
+
+  // Reset suggestions when search type changes
+  useEffect(() => {
+    setSuggestions([]);
+    setCurrentQuery("");
+  }, [searchType]);
+
+  const handleQueryChange = (query: string) => {
+    setCurrentQuery(query);
+  };
+
   const viewPoemDetails = (poem: Poem) => {
     sessionStorage.setItem("selectedPoem", JSON.stringify(poem));
     navigate("/poem-details");
@@ -78,7 +143,10 @@ const Search = () => {
       
       <SearchBar 
         onSearch={handleSearch} 
-        placeholder={`Search by ${searchType}...`} 
+        placeholder={`Search by ${searchType}...`}
+        suggestions={suggestions}
+        isLoading={loadingSuggestions}
+        onQueryChange={handleQueryChange}
       />
       
       <div className="mt-12">
