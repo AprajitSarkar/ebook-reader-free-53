@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Poem } from "@/services/poetryService";
@@ -24,18 +25,19 @@ const PoemDetails = () => {
 
   const sharePoem = () => {
     if (poem) {
+      // Create a formatted poem text with title, author, and poem text
+      const poemText = `${poem.title}\nby ${poem.author}\n\n${poem.lines.join("\n")}\n\nShared from Poetic Clouds app\nGet it on Play Store: https://play.google.com/store/apps/details?id=com.hitmouse`;
+      
       if (navigator.share) {
         navigator
           .share({
             title: `${poem.title} by ${poem.author}`,
-            text: poem.lines.join("\n"),
+            text: poemText,
           })
           .catch((error) => console.log("Error sharing", error));
       } else {
         // Fallback for browsers that don't support the Web Share API
-        navigator.clipboard.writeText(
-          `${poem.title} by ${poem.author}\n\n${poem.lines.join("\n")}`
-        );
+        navigator.clipboard.writeText(poemText);
         toast.success("Poem copied to clipboard!");
       }
     }

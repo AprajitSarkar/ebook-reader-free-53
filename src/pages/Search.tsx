@@ -6,6 +6,7 @@ import SearchBar from "@/components/SearchBar";
 import PoemCard from "@/components/PoemCard";
 import PoemSkeleton from "@/components/PoemSkeleton";
 import { toast } from "@/lib/toast";
+import { History, Plus, Trash2 } from "lucide-react";
 
 type SearchType = "title" | "author" | "lines";
 
@@ -17,11 +18,29 @@ const Search = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [currentQuery, setCurrentQuery] = useState("");
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
 
+  // Load search history on component mount
+  useEffect(() => {
+    const history = localStorage.getItem("searchHistory");
+    if (history) {
+      setSearchHistory(JSON.parse(history));
+    }
+  }, []);
+
   const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
     setLoading(true);
     setHasSearched(true);
+    
+    // Add to search history
+    const updatedHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 10);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+    setShowHistory(false);
     
     try {
       let searchResults: Poem[] = [];
@@ -117,6 +136,17 @@ const Search = () => {
     navigate("/poem-details");
   };
 
+  const clearSearchHistory = () => {
+    localStorage.removeItem("searchHistory");
+    setSearchHistory([]);
+    setShowHistory(false);
+    toast.success("Search history cleared");
+  };
+
+  const toggleHistory = () => {
+    setShowHistory(!showHistory);
+  };
+
   return (
     <div className="container px-4 py-12 pb-24 min-h-screen">
       <h1 className="text-2xl font-serif font-bold text-center mb-8 gradient-text">
@@ -141,13 +171,53 @@ const Search = () => {
         </div>
       </div>
       
-      <SearchBar 
-        onSearch={handleSearch} 
-        placeholder={`Search by ${searchType}...`}
-        suggestions={suggestions}
-        isLoading={loadingSuggestions}
-        onQueryChange={handleQueryChange}
-      />
+      <div className="relative">
+        <div className="flex items-center mb-2">
+          <SearchBar 
+            onSearch={handleSearch} 
+            placeholder={`Search by ${searchType}...`}
+            suggestions={suggestions}
+            isLoading={loadingSuggestions}
+            onQueryChange={handleQueryChange}
+          />
+          
+          <button 
+            onClick={toggleHistory}
+            className="ml-2 p-2 rounded-full bg-secondary/30 hover:bg-secondary/50 transition-colors"
+            aria-label="View search history"
+          >
+            <History size={20} className="text-foreground/70" />
+          </button>
+        </div>
+        
+        {showHistory && searchHistory.length > 0 && (
+          <div className="absolute w-full z-50 mt-1 bg-background rounded-lg border shadow-md p-2 animate-in fade-in-50 slide-in-from-top-5">
+            <div className="flex justify-between items-center mb-2 px-2">
+              <h3 className="text-sm font-medium">Recent Searches</h3>
+              <button 
+                onClick={clearSearchHistory}
+                className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1"
+              >
+                <Trash2 size={14} />
+                Clear
+              </button>
+            </div>
+            <ul className="space-y-1">
+              {searchHistory.map((item, index) => (
+                <li key={index}>
+                  <button
+                    onClick={() => handleSearch(item)}
+                    className="w-full text-left px-3 py-2 rounded hover:bg-secondary/50 text-sm flex items-center"
+                  >
+                    <History size={14} className="mr-2 text-foreground/60" />
+                    {item}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
       
       <div className="mt-12">
         {loading ? (

@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Search from "./pages/Search";
 import Poems from "./pages/Poems";
 import PoemDetails from "./pages/PoemDetails";
+import LikedPoems from "./pages/LikedPoems";
 import NotFound from "./pages/NotFound";
 
 // Components
@@ -45,6 +46,7 @@ const App = () => {
                 <Route path="/search" element={<Search />} />
                 <Route path="/poems" element={<Poems />} />
                 <Route path="/poem-details" element={<PoemDetails />} />
+                <Route path="/liked-poems" element={<LikedPoems />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Navbar />

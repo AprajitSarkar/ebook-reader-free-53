@@ -2,6 +2,7 @@
 import { Poem } from "@/services/poetryService";
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface PoemCardProps {
   poem: Poem;
@@ -12,11 +13,38 @@ const PoemCard = ({ poem, fullView = false }: PoemCardProps) => {
   const [liked, setLiked] = useState(false);
   const [visible, setVisible] = useState(false);
   
+  // Check if poem is liked on component mount
+  useEffect(() => {
+    const likedPoems = JSON.parse(localStorage.getItem("likedPoems") || "[]");
+    const isLiked = likedPoems.some(
+      (p: Poem) => p.title === poem.title && p.author === poem.author
+    );
+    setLiked(isLiked);
+  }, [poem]);
+  
   useEffect(() => {
     setVisible(true);
   }, []);
 
-  const toggleLike = () => {
+  const toggleLike = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering parent click events
+    
+    const likedPoems = JSON.parse(localStorage.getItem("likedPoems") || "[]");
+    
+    if (liked) {
+      // Remove from liked poems
+      const updatedLikedPoems = likedPoems.filter(
+        (p: Poem) => !(p.title === poem.title && p.author === poem.author)
+      );
+      localStorage.setItem("likedPoems", JSON.stringify(updatedLikedPoems));
+      toast.success("Removed from favorites");
+    } else {
+      // Add to liked poems
+      const updatedLikedPoems = [...likedPoems, poem];
+      localStorage.setItem("likedPoems", JSON.stringify(updatedLikedPoems));
+      toast.success("Added to favorites");
+    }
+    
     setLiked(!liked);
   };
 
