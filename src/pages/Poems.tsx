@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { poetryService, Poem } from "@/services/poetryService";
 import PoemCard from "@/components/PoemCard";
 import PoemSkeleton from "@/components/PoemSkeleton";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 

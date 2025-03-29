@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { poetryService, Poem } from "@/services/poetryService";
 import SearchBar from "@/components/SearchBar";
 import PoemCard from "@/components/PoemCard";
 import PoemSkeleton from "@/components/PoemSkeleton";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 
 type SearchType = "title" | "author" | "lines";
 

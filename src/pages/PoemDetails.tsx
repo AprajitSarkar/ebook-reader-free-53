@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Poem } from "@/services/poetryService";
 import PoemCard from "@/components/PoemCard";
 import { ArrowLeft, Share2 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 
 const PoemDetails = () => {
   const [poem, setPoem] = useState<Poem | null>(null);
