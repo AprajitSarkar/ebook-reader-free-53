@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { adService } from "@/services/adService";
@@ -25,8 +25,10 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const hideSplash = () => {
+    console.log("Splash screen completed, showing main app");
     setShowSplash(false);
   };
 
@@ -34,12 +36,18 @@ const App = () => {
     // Force dark mode
     document.documentElement.classList.add('dark');
     
+    // Show app is loaded
+    setIsLoaded(true);
+    console.log("App component mounted");
+    
     // Initialize AdMob if on Android
     const initAds = async () => {
       if (Capacitor.getPlatform() === 'android') {
         try {
+          console.log("Initializing ads");
           await adService.initialize();
           await adService.showBanner();
+          console.log("Ads initialized successfully");
         } catch (error) {
           console.error('Error initializing ads:', error);
         }
@@ -58,6 +66,10 @@ const App = () => {
     };
   }, [showSplash]);
 
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading...</div>;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <UserSettingsProvider>
@@ -70,7 +82,7 @@ const App = () => {
               <>
                 <div className={Capacitor.getPlatform() === 'android' ? "pb-[150px]" : "pb-24"}>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/poems" replace />} />
+                    <Route path="/" element={<Poems />} />
                     <Route path="/poems" element={<Poems />} />
                     <Route path="/search" element={<Search />} />
                     <Route path="/poem-details" element={<PoemDetails />} />
