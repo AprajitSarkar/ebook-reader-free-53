@@ -3,12 +3,24 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Poem } from "@/services/poetryService";
 import PoemCard from "@/components/PoemCard";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, Share2, Globe, Mic, MicOff } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { translationService } from "@/services/translationService";
+import { speechService } from "@/services/speechService";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 const PoemDetails = () => {
   const [poem, setPoem] = useState<Poem | null>(null);
+  const [translatedPoem, setTranslatedPoem] = useState<Poem | null>(null);
+  const [isTranslated, setIsTranslated] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState<string>("");
+  const [isReading, setIsReading] = useState(false);
+  const { settings } = useUserSettings();
   const navigate = useNavigate();
+
+  const languages = translationService.getAvailableLanguages();
 
   useEffect(() => {
     const storedPoem = sessionStorage.getItem("selectedPoem");
@@ -17,9 +29,16 @@ const PoemDetails = () => {
     } else {
       navigate("/");
     }
-  }, [navigate]);
+    
+    // Set default translation language from user settings
+    setTranslationLanguage(settings.preferredLanguage);
+  }, [navigate, settings.preferredLanguage]);
 
   const goBack = () => {
+    // Stop any ongoing reading when navigating away
+    if (isReading) {
+      speechService.stop();
+    }
     navigate(-1);
   };
 
@@ -42,6 +61,78 @@ const PoemDetails = () => {
       }
     }
   };
+
+  const translatePoem = async () => {
+    if (!poem || !translationLanguage) return;
+    
+    try {
+      // Translate the title
+      const translatedTitle = await translationService.translateText(
+        poem.title,
+        translationLanguage
+      );
+      
+      // Translate each line of the poem
+      const translatedLines = await Promise.all(
+        poem.lines.map(line => 
+          translationService.translateText(line, translationLanguage)
+        )
+      );
+      
+      // Create a new translated poem object
+      const translatedPoemObj: Poem = {
+        ...poem,
+        title: translatedTitle,
+        lines: translatedLines,
+      };
+      
+      setTranslatedPoem(translatedPoemObj);
+      setIsTranslated(true);
+      
+      const languageName = languages.find(l => l.code === translationLanguage)?.name || translationLanguage;
+      toast.success(`Poem translated to ${languageName}`);
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast.error("Failed to translate the poem. Please try again.");
+    }
+  };
+
+  const resetTranslation = () => {
+    setIsTranslated(false);
+    setTranslatedPoem(null);
+  };
+
+  const readPoem = () => {
+    if (!poem) return;
+    
+    const poemText = `${poem.title} by ${poem.author}. ${poem.lines.join(". ")}`;
+    
+    // Get the user's preferred voice if available
+    let voice = null;
+    if (settings.preferredVoice) {
+      voice = window.speechSynthesis.getVoices().find(
+        v => v.voiceURI === settings.preferredVoice?.id
+      ) || null;
+    }
+    
+    setIsReading(true);
+    speechService.speak(poemText, voice);
+    
+    // Set up event listener to detect when speech has finished
+    const checkSpeaking = setInterval(() => {
+      if (!window.speechSynthesis.speaking) {
+        setIsReading(false);
+        clearInterval(checkSpeaking);
+      }
+    }, 100);
+  };
+
+  const stopReading = () => {
+    speechService.stop();
+    setIsReading(false);
+  };
+
+  const activePoem = isTranslated && translatedPoem ? translatedPoem : poem;
 
   if (!poem) {
     return (
@@ -71,11 +162,70 @@ const PoemDetails = () => {
         </button>
       </div>
 
-      <PoemCard poem={poem} fullView={true} />
+      <div className="mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex items-center gap-2">
+          <Globe size={18} />
+          <span className="text-sm">Translate to:</span>
+        </div>
+        
+        <div className="flex gap-2 items-center flex-1">
+          <Select
+            value={translationLanguage}
+            onValueChange={setTranslationLanguage}
+          >
+            <SelectTrigger className="w-full max-w-xs">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map(lang => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {isTranslated ? (
+            <Button variant="outline" onClick={resetTranslation}>
+              Original
+            </Button>
+          ) : (
+            <Button onClick={translatePoem} disabled={!translationLanguage}>
+              Translate
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {isReading ? (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={stopReading} 
+              className="flex items-center gap-1"
+            >
+              <MicOff size={16} />
+              <span>Stop</span>
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={readPoem} 
+              className="flex items-center gap-1"
+            >
+              <Mic size={16} />
+              <span>Read Aloud</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {activePoem && <PoemCard poem={activePoem} fullView={true} />}
       
       <div className="mt-8 text-center">
         <p className="text-sm text-foreground/60">
-          {poem.linecount} lines • Published by {poem.author}
+          {activePoem.linecount} lines • Published by {activePoem.author}
         </p>
       </div>
     </div>
