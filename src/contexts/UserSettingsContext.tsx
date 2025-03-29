@@ -1,14 +1,15 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { VoiceOption, speechService } from "@/services/speechService";
 
 interface UserSettings {
   preferredVoice: VoiceOption | null;
+  useOfflineVoice: boolean;
 }
 
 interface UserSettingsContextType {
   settings: UserSettings;
   updateVoice: (voice: VoiceOption | null) => void;
+  toggleOfflineMode: (enabled: boolean) => void;
 }
 
 const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
@@ -16,6 +17,7 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
     const savedSettings = localStorage.getItem("userSettings");
     return savedSettings ? JSON.parse(savedSettings) : {
       preferredVoice: null,
+      useOfflineVoice: false
     };
   });
 
@@ -23,7 +25,18 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const setDefaultFemaleVoice = () => {
       if (!settings.preferredVoice) {
-        // Try to get preferred voices first (better quality)
+        // Try to get Google voices first if not in offline mode
+        if (!settings.useOfflineVoice) {
+          const googleVoices = speechService.getGoogleVoices();
+          const femaleGoogleVoice = googleVoices.find(voice => voice.gender === "female");
+          
+          if (femaleGoogleVoice) {
+            setSettings(prev => ({ ...prev, preferredVoice: femaleGoogleVoice }));
+            return;
+          }
+        }
+        
+        // Otherwise, try preferred voices (better quality)
         const preferredVoices = speechService.getPreferredVoices();
         const femaleVoice = preferredVoices.find(voice => voice.gender === "female");
         
@@ -54,7 +67,7 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
         window.speechSynthesis.onvoiceschanged = null;
       }
     };
-  }, [settings.preferredVoice]);
+  }, [settings.preferredVoice, settings.useOfflineVoice]);
 
   useEffect(() => {
     localStorage.setItem("userSettings", JSON.stringify(settings));
@@ -63,9 +76,23 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateVoice = (voice: VoiceOption | null) => {
     setSettings(prev => ({ ...prev, preferredVoice: voice }));
   };
+  
+  const toggleOfflineMode = (enabled: boolean) => {
+    setSettings(prev => ({ ...prev, useOfflineVoice: enabled }));
+    
+    // If enabling offline mode, try to select an offline voice
+    if (enabled) {
+      const offlineVoices = speechService.getOfflineVoices();
+      const femaleOfflineVoice = offlineVoices.find(voice => voice.gender === "female");
+      
+      if (femaleOfflineVoice) {
+        setSettings(prev => ({ ...prev, preferredVoice: femaleOfflineVoice, useOfflineVoice: true }));
+      }
+    }
+  };
 
   return (
-    <UserSettingsContext.Provider value={{ settings, updateVoice }}>
+    <UserSettingsContext.Provider value={{ settings, updateVoice, toggleOfflineMode }}>
       {children}
     </UserSettingsContext.Provider>
   );

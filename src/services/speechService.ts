@@ -4,6 +4,7 @@ export interface VoiceOption {
   name: string;
   gender: "male" | "female";
   lang?: string;
+  isGoogleVoice?: boolean;
 }
 
 export const speechService = {
@@ -83,11 +84,15 @@ export const speechService = {
         gender = "female";
       }
       
+      // Check if it's a Google voice
+      const isGoogleVoice = nameLower.includes("google");
+      
       return {
         id: voice.voiceURI,
         name: voice.name,
         gender: gender,
-        lang: voice.lang
+        lang: voice.lang,
+        isGoogleVoice: isGoogleVoice
       };
     });
   },
@@ -109,8 +114,44 @@ export const speechService = {
       );
     });
     
-    // Sort by gender to put female voices first
+    // Sort by gender to put female voices first, then Google voices second
     return preferredVoices.sort((a, b) => {
+      if (a.gender === "female" && b.gender === "male") return -1;
+      if (a.gender === "male" && b.gender === "female") return 1;
+      if (a.isGoogleVoice && !b.isGoogleVoice) return -1;
+      if (!a.isGoogleVoice && b.isGoogleVoice) return 1;
+      return 0;
+    });
+  },
+  
+  getGoogleVoices: (): VoiceOption[] => {
+    const allVoices = speechService.getVoices();
+    
+    // Filter to get only Google voices
+    const googleVoices = allVoices.filter(voice => 
+      voice.name.toLowerCase().includes("google")
+    );
+    
+    // Sort by gender to put female voices first
+    return googleVoices.sort((a, b) => {
+      if (a.gender === "female" && b.gender === "male") return -1;
+      if (a.gender === "male" && b.gender === "female") return 1;
+      return 0;
+    });
+  },
+  
+  getOfflineVoices: (): VoiceOption[] => {
+    const allVoices = speechService.getVoices();
+    
+    // Filter to get non-network voices that should work offline
+    const offlineVoices = allVoices.filter(voice => {
+      const name = voice.name.toLowerCase();
+      // Most built-in voices should work offline (non-Google, non-remote)
+      return !name.includes("google") && !name.includes("remote");
+    });
+    
+    // Sort by gender to put female voices first
+    return offlineVoices.sort((a, b) => {
       if (a.gender === "female" && b.gender === "male") return -1;
       if (a.gender === "male" && b.gender === "female") return 1;
       return 0;
