@@ -114,57 +114,65 @@ const PoemDetails = () => {
   }
 
   return (
-    <div className="container px-4 py-12 pb-24 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <button
-          onClick={goBack}
-          className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
-        >
-          <ArrowLeft size={18} />
-          <span>Back</span>
-        </button>
-        
-        <button
-          onClick={sharePoem}
-          className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
-        >
-          <Share2 size={18} />
-          <span>Share</span>
-        </button>
-      </div>
-
-      <div className="mb-8 space-y-4">
-        <div className="flex justify-end">
-          {isReading ? (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={stopReading} 
-              className="flex items-center gap-1"
-            >
-              <MicOff size={16} />
-              <span>Stop</span>
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={readPoem} 
-              className="flex items-center gap-1"
-            >
-              <Volume2 size={16} />
-              <span>Read Aloud</span>
-            </Button>
-          )}
+    <div className="container min-h-screen">
+      <div className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md z-10 p-4">
+        <div className="flex justify-between items-center max-w-screen-lg mx-auto">
+          <button
+            onClick={goBack}
+            className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
+          >
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </button>
+          
+          <h1 className="text-lg font-serif font-medium text-primary truncate max-w-[150px] sm:max-w-[200px]">
+            {poem.title}
+          </h1>
+          
+          <button
+            onClick={sharePoem}
+            className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
+          >
+            <Share2 size={18} />
+            <span>Share</span>
+          </button>
         </div>
       </div>
 
-      {poem && <PoemCard poem={poem} fullView={true} />}
-      
-      <div className="mt-8 text-center">
-        <p className="text-sm text-foreground/60">
-          {poem.linecount} lines • Published by {poem.author}
-        </p>
+      <div className="pt-20 pb-24 px-4">
+        <div className="mb-8 space-y-4">
+          <div className="flex justify-end">
+            {isReading ? (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={stopReading} 
+                className="flex items-center gap-1"
+              >
+                <MicOff size={16} />
+                <span>Stop</span>
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={readPoem} 
+                className="flex items-center gap-1"
+              >
+                <Volume2 size={16} />
+                <span>Read Aloud</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {poem && <PoemCard poem={poem} fullView={true} />}
+        
+        <div className="mt-8 text-center">
+          <p className="text-sm text-foreground/60">
+            {poem.linecount} lines • Published by {poem.author}
+          </p>
+        </div>
       </div>
     </div>
   );

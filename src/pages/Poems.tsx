@@ -88,23 +88,25 @@ const Poems = () => {
   };
 
   return (
-    <div className="container px-4 py-12 pb-24 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-serif font-bold gradient-text">
-          Discover Poems
-        </h1>
-        <Button 
-          onClick={refreshPoems}
-          variant="outline"
-          className="flex items-center gap-2 text-foreground/80 hover:text-primary/80 border-primary/30 hover:border-primary/50"
-          disabled={loading}
-        >
-          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          <span>Refresh</span>
-        </Button>
+    <div className="container min-h-screen">
+      <div className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md z-10 p-4">
+        <div className="flex justify-between items-center max-w-screen-lg mx-auto">
+          <h1 className="text-2xl font-serif font-bold gradient-text">
+            Discover Poems
+          </h1>
+          <Button 
+            onClick={refreshPoems}
+            variant="outline"
+            className="flex items-center gap-2 text-foreground/80 hover:text-primary/80 border-primary/30 hover:border-primary/50"
+            disabled={loading}
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-6 pt-20 pb-24 px-4">
         {loading && poems.length === 0 ? (
           // Initial loading state
           Array(POEMS_PER_PAGE)

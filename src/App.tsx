@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { adService } from "@/services/adService";
 import { Capacitor } from '@capacitor/core';
+import { toast } from "@/lib/toast";
 
 // Pages
 import Poems from "./pages/Poems";
@@ -26,11 +27,33 @@ const queryClient = new QueryClient();
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const hideSplash = () => {
     console.log("Splash screen completed, showing main app");
     setShowSplash(false);
   };
+
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("You're back online");
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warning("You're offline. Some features may be limited.");
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     // Force dark mode
