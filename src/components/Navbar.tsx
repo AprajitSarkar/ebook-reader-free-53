@@ -1,6 +1,7 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, BookOpen, Heart, Settings } from "lucide-react";
+import { Capacitor } from '@capacitor/core';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -9,8 +10,13 @@ const Navbar = () => {
   // Helper to check if a route is active
   const isActive = (path: string) => location.pathname === path;
 
+  // Adjust position for Android with ads
+  const navbarPosition = Capacitor.getPlatform() === 'android' 
+    ? "bottom-16" // Position above the ad banner
+    : "bottom-6"; // Normal position for other platforms
+
   return (
-    <nav className="fixed bottom-6 w-full z-50 flex justify-center">
+    <nav className={`fixed ${navbarPosition} w-full z-50 flex justify-center`}>
       <div className="glass-card flex items-center justify-around px-6 py-4 gap-4 sm:gap-8 animate-fade-in">
         <button 
           onClick={() => navigate("/poems")}

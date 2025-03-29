@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
       backgroundColor: "#121212",
       showSpinner: true,
       spinnerColor: "#8b5cf6"
+    },
+    AdMob: {
+      applicationID: "ca-app-pub-3279473081670891~9908825517"
     }
   }
 };

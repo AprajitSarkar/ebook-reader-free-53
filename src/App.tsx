@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
+import { adService } from "@/services/adService";
+import { Capacitor } from '@capacitor/core';
 
 // Pages
 import Poems from "./pages/Poems";
@@ -31,7 +33,30 @@ const App = () => {
   useEffect(() => {
     // Force dark mode
     document.documentElement.classList.add('dark');
-  }, []);
+    
+    // Initialize AdMob if on Android
+    const initAds = async () => {
+      if (Capacitor.getPlatform() === 'android') {
+        try {
+          await adService.initialize();
+          await adService.showBanner();
+        } catch (error) {
+          console.error('Error initializing ads:', error);
+        }
+      }
+    };
+    
+    if (!showSplash) {
+      initAds();
+    }
+    
+    return () => {
+      // Clean up ads when component unmounts
+      if (Capacitor.getPlatform() === 'android') {
+        adService.removeBanner().catch(console.error);
+      }
+    };
+  }, [showSplash]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -43,15 +68,17 @@ const App = () => {
           <BrowserRouter>
             {!showSplash && (
               <>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/poems" replace />} />
-                  <Route path="/poems" element={<Poems />} />
-                  <Route path="/search" element={<Search />} />
-                  <Route path="/poem-details" element={<PoemDetails />} />
-                  <Route path="/liked-poems" element={<LikedPoems />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <div className={Capacitor.getPlatform() === 'android' ? "pb-[150px]" : "pb-24"}>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/poems" replace />} />
+                    <Route path="/poems" element={<Poems />} />
+                    <Route path="/search" element={<Search />} />
+                    <Route path="/poem-details" element={<PoemDetails />} />
+                    <Route path="/liked-poems" element={<LikedPoems />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
                 <Navbar />
               </>
             )}
