@@ -1,16 +1,17 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { speechService, VoiceOption } from "@/services/speechService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Mic, Settings as SettingsIcon, Search, ArrowLeft } from "lucide-react";
+import { Mic, Search, ArrowLeft } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { settings, updateVoice } = useUserSettings();
   const [availableVoices, setAvailableVoices] = useState<VoiceOption[]>([]);
   const [preferredVoices, setPreferredVoices] = useState<VoiceOption[]>([]);
@@ -90,13 +91,13 @@ const Settings = () => {
         <div className="flex justify-between items-center max-w-screen-lg mx-auto">
           <button
             onClick={goBack}
-            className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors text-xs sm:text-sm"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
             <span>Back</span>
           </button>
           
-          <h1 className="text-2xl font-serif font-bold gradient-text">Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-serif font-bold gradient-text">Settings</h1>
           
           <div className="w-[72px]"></div> {/* Empty div for balance */}
         </div>
@@ -104,14 +105,14 @@ const Settings = () => {
 
       <div className="space-y-8 pt-20">
         {/* Text-to-Speech Settings */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-medium mb-4 flex items-center gap-2">
-            <Mic size={20} />
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-medium mb-4 flex items-center gap-2">
+            <Mic size={isMobile ? 18 : 20} />
             Text-to-Speech Settings
           </h2>
           
           <div className="space-y-4">
-            <p className="text-sm text-foreground/70">
+            <p className="text-xs sm:text-sm text-foreground/70">
               Select your preferred voice for reading poems:
             </p>
             
@@ -121,16 +122,16 @@ const Settings = () => {
                 placeholder="Search voices by name or language..."
                 value={voiceSearch}
                 onChange={(e) => setVoiceSearch(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-xs sm:text-sm"
               />
             </div>
             
             <Tabs defaultValue="google" className="w-full" onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="google">Google Voices</TabsTrigger>
-                <TabsTrigger value="offline">Offline Voices</TabsTrigger>
-                <TabsTrigger value="recommended">Recommended</TabsTrigger>
-                <TabsTrigger value="all">All Voices</TabsTrigger>
+                <TabsTrigger value="google" className="text-xs sm:text-sm">Google Voices</TabsTrigger>
+                <TabsTrigger value="offline" className="text-xs sm:text-sm">Offline Voices</TabsTrigger>
+                <TabsTrigger value="recommended" className="text-xs sm:text-sm">Recommended</TabsTrigger>
+                <TabsTrigger value="all" className="text-xs sm:text-sm">All Voices</TabsTrigger>
               </TabsList>
               
               <TabsContent value="google" className="mt-4">
@@ -139,17 +140,17 @@ const Settings = () => {
                     filteredGoogleVoices.map(voice => (
                       <div 
                         key={voice.id} 
-                        className={`flex items-center justify-between p-3 rounded-md border ${
+                        className={`flex items-center justify-between p-2 sm:p-3 rounded-md border ${
                           settings.preferredVoice?.id === voice.id 
                             ? "border-primary bg-primary/10" 
                             : "border-border hover:border-primary/50"
                         }`}
                       >
                         <div>
-                          <p className="font-medium">{voice.name}</p>
+                          <p className="font-medium text-xs sm:text-sm">{voice.name}</p>
                           <div className="flex items-center gap-2">
                             <span className={`inline-block w-2 h-2 rounded-full ${voice.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'}`}></span>
-                            <p className="text-sm text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
+                            <p className="text-xs text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
                           </div>
                         </div>
                         <div className="space-x-2">
@@ -157,6 +158,7 @@ const Settings = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => testVoice(voice)}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Test
                           </Button>
@@ -164,6 +166,7 @@ const Settings = () => {
                             size="sm"
                             onClick={() => handleVoiceSelect(voice)}
                             disabled={settings.preferredVoice?.id === voice.id}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Select
                           </Button>
@@ -171,7 +174,7 @@ const Settings = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-foreground/60 py-4">
+                    <p className="text-center text-foreground/60 py-4 text-xs sm:text-sm">
                       {googleVoices.length === 0 
                         ? "Loading Google voices..." 
                         : "No Google voices matching your search"
@@ -187,17 +190,17 @@ const Settings = () => {
                     filteredOfflineVoices.map(voice => (
                       <div 
                         key={voice.id} 
-                        className={`flex items-center justify-between p-3 rounded-md border ${
+                        className={`flex items-center justify-between p-2 sm:p-3 rounded-md border ${
                           settings.preferredVoice?.id === voice.id 
                             ? "border-primary bg-primary/10" 
                             : "border-border hover:border-primary/50"
                         }`}
                       >
                         <div>
-                          <p className="font-medium">{voice.name}</p>
+                          <p className="font-medium text-xs sm:text-sm">{voice.name}</p>
                           <div className="flex items-center gap-2">
                             <span className={`inline-block w-2 h-2 rounded-full ${voice.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'}`}></span>
-                            <p className="text-sm text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
+                            <p className="text-xs text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
                           </div>
                         </div>
                         <div className="space-x-2">
@@ -205,6 +208,7 @@ const Settings = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => testVoice(voice)}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Test
                           </Button>
@@ -212,6 +216,7 @@ const Settings = () => {
                             size="sm"
                             onClick={() => handleVoiceSelect(voice)}
                             disabled={settings.preferredVoice?.id === voice.id}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Select
                           </Button>
@@ -219,7 +224,7 @@ const Settings = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-foreground/60 py-4">
+                    <p className="text-center text-foreground/60 py-4 text-xs sm:text-sm">
                       {offlineVoices.length === 0 
                         ? "Loading offline voices..." 
                         : "No offline voices matching your search"
@@ -235,17 +240,17 @@ const Settings = () => {
                     filteredPreferredVoices.map(voice => (
                       <div 
                         key={voice.id} 
-                        className={`flex items-center justify-between p-3 rounded-md border ${
+                        className={`flex items-center justify-between p-2 sm:p-3 rounded-md border ${
                           settings.preferredVoice?.id === voice.id 
                             ? "border-primary bg-primary/10" 
                             : "border-border hover:border-primary/50"
                         }`}
                       >
                         <div>
-                          <p className="font-medium">{voice.name}</p>
+                          <p className="font-medium text-xs sm:text-sm">{voice.name}</p>
                           <div className="flex items-center gap-2">
                             <span className={`inline-block w-2 h-2 rounded-full ${voice.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'}`}></span>
-                            <p className="text-sm text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
+                            <p className="text-xs text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
                           </div>
                         </div>
                         <div className="space-x-2">
@@ -253,6 +258,7 @@ const Settings = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => testVoice(voice)}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Test
                           </Button>
@@ -260,6 +266,7 @@ const Settings = () => {
                             size="sm"
                             onClick={() => handleVoiceSelect(voice)}
                             disabled={settings.preferredVoice?.id === voice.id}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Select
                           </Button>
@@ -267,7 +274,7 @@ const Settings = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-foreground/60 py-4">
+                    <p className="text-center text-foreground/60 py-4 text-xs sm:text-sm">
                       {preferredVoices.length === 0 
                         ? "Loading recommended voices..." 
                         : "No recommended voices matching your search"
@@ -283,17 +290,17 @@ const Settings = () => {
                     filteredVoices.map(voice => (
                       <div 
                         key={voice.id} 
-                        className={`flex items-center justify-between p-3 rounded-md border ${
+                        className={`flex items-center justify-between p-2 sm:p-3 rounded-md border ${
                           settings.preferredVoice?.id === voice.id 
                             ? "border-primary bg-primary/10" 
                             : "border-border hover:border-primary/50"
                         }`}
                       >
                         <div>
-                          <p className="font-medium">{voice.name}</p>
+                          <p className="font-medium text-xs sm:text-sm">{voice.name}</p>
                           <div className="flex items-center gap-2">
                             <span className={`inline-block w-2 h-2 rounded-full ${voice.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'}`}></span>
-                            <p className="text-sm text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
+                            <p className="text-xs text-foreground/60">{voice.gender} {voice.lang && `• ${voice.lang}`}</p>
                           </div>
                         </div>
                         <div className="space-x-2">
@@ -301,6 +308,7 @@ const Settings = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => testVoice(voice)}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Test
                           </Button>
@@ -308,6 +316,7 @@ const Settings = () => {
                             size="sm"
                             onClick={() => handleVoiceSelect(voice)}
                             disabled={settings.preferredVoice?.id === voice.id}
+                            className="text-xs h-7 sm:h-9"
                           >
                             Select
                           </Button>
@@ -315,7 +324,7 @@ const Settings = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-foreground/60 py-4">
+                    <p className="text-center text-foreground/60 py-4 text-xs sm:text-sm">
                       {availableVoices.length === 0 
                         ? "Loading voices..." 
                         : "No voices matching your search"
@@ -327,14 +336,14 @@ const Settings = () => {
             </Tabs>
             
             {settings.preferredVoice && (
-              <div className="mt-6 p-4 bg-primary/5 rounded-md border border-primary/20">
-                <h3 className="font-medium mb-2">Currently Selected Voice</h3>
+              <div className="mt-6 p-3 sm:p-4 bg-primary/5 rounded-md border border-primary/20">
+                <h3 className="font-medium mb-2 text-xs sm:text-sm">Currently Selected Voice</h3>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p>{settings.preferredVoice.name}</p>
+                    <p className="text-xs sm:text-sm">{settings.preferredVoice.name}</p>
                     <div className="flex items-center gap-2">
                       <span className={`inline-block w-2 h-2 rounded-full ${settings.preferredVoice.gender === 'female' ? 'bg-pink-500' : 'bg-blue-500'}`}></span>
-                      <p className="text-sm text-foreground/60">
+                      <p className="text-xs text-foreground/60">
                         {settings.preferredVoice.gender} 
                         {settings.preferredVoice.lang && ` • ${settings.preferredVoice.lang}`}
                       </p>
@@ -344,6 +353,7 @@ const Settings = () => {
                     size="sm" 
                     variant="outline"
                     onClick={() => testVoice(settings.preferredVoice!)}
+                    className="text-xs h-7 sm:h-9"
                   >
                     Test
                   </Button>

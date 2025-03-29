@@ -58,6 +58,18 @@
   body {
     @apply bg-background text-foreground font-sans antialiased min-h-screen;
   }
+  
+  /* Responsive text sizing */
+  html {
+    font-size: 14px;
+    overflow-x: hidden;
+  }
+  
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
 }
 
 .glass-card {
@@ -65,15 +77,11 @@
 }
 
 .poem-text {
-  @apply leading-relaxed tracking-wide;
+  @apply leading-relaxed tracking-wide text-sm sm:text-base;
 }
 
 .gradient-text {
   @apply bg-gradient-to-r from-purple-300 to-pink-200 bg-clip-text text-transparent;
-}
-
-html {
-  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar {
