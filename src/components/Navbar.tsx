@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, BookOpen, Heart, Settings } from "lucide-react";
 import { Capacitor } from '@capacitor/core';
@@ -10,10 +9,8 @@ const Navbar = () => {
   // Helper to check if a route is active
   const isActive = (path: string) => location.pathname === path;
 
-  // Adjust position for Android with ads
-  const navbarPosition = Capacitor.getPlatform() === 'android' 
-    ? "bottom-16" // Position above the ad banner
-    : "bottom-6"; // Normal position for other platforms
+  // We're not changing position for Android now, keeping it fixed above ad banner
+  const navbarPosition = "bottom-6"; // Same position for all platforms
 
   return (
     <nav className={`fixed ${navbarPosition} w-full z-50 flex justify-center`}>

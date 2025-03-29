@@ -14,7 +14,7 @@ export const adService = {
       adId: 'ca-app-pub-3279473081670891/1003101920',
       adSize: BannerAdSize.ADAPTIVE_BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 60, // Add margin to prevent overlapping with navbar
+      margin: 0, // Removed margin so banner sits directly at bottom
       isTesting: false
     };
 

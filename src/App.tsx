@@ -80,7 +80,7 @@ const App = () => {
           <BrowserRouter>
             {!showSplash && (
               <>
-                <div className={Capacitor.getPlatform() === 'android' ? "pb-[150px]" : "pb-24"}>
+                <div className="pb-24">
                   <Routes>
                     <Route path="/" element={<Poems />} />
                     <Route path="/poems" element={<Poems />} />
