@@ -3,6 +3,7 @@ export interface VoiceOption {
   id: string;
   name: string;
   gender: "male" | "female";
+  lang?: string;
 }
 
 export const speechService = {
@@ -19,6 +20,7 @@ export const speechService = {
     
     if (voice) {
       utterance.voice = voice;
+      utterance.lang = voice.lang;
     } else {
       // If no voice is provided, try to find a female voice
       const voices = window.speechSynthesis.getVoices();
@@ -31,8 +33,14 @@ export const speechService = {
       
       if (femaleVoice) {
         utterance.voice = femaleVoice;
+        utterance.lang = femaleVoice.lang;
       }
     }
+    
+    // Adjust properties for better speech quality
+    utterance.rate = 1.0; // Normal speed
+    utterance.pitch = 1.0; // Normal pitch
+    utterance.volume = 1.0; // Full volume
     
     window.speechSynthesis.speak(utterance);
   },
@@ -59,6 +67,17 @@ export const speechService = {
         nameLower.includes("female") || 
         nameLower.includes("woman") || 
         nameLower.includes("girl") ||
+        nameLower.includes("samantha") ||
+        nameLower.includes("victoria") ||
+        nameLower.includes("tessa") ||
+        nameLower.includes("monica") ||
+        nameLower.includes("kathy") ||
+        nameLower.includes("karen") ||
+        nameLower.includes("veena") ||
+        nameLower.includes("fiona") ||
+        nameLower.includes("lisa") ||
+        nameLower.includes("laura") ||
+        nameLower.includes("allison") ||
         (nameLower.includes("f") && !nameLower.includes("male"))
       ) {
         gender = "female";
@@ -67,8 +86,34 @@ export const speechService = {
       return {
         id: voice.voiceURI,
         name: voice.name,
-        gender: gender
+        gender: gender,
+        lang: voice.lang
       };
+    });
+  },
+  
+  getPreferredVoices: (): VoiceOption[] => {
+    const allVoices = speechService.getVoices();
+    
+    // Filter to get more widely available voices
+    const preferredVoices = allVoices.filter(voice => {
+      const name = voice.name.toLowerCase();
+      // Include common Google and system voices
+      return (
+        name.includes("google") || 
+        name.includes("samantha") || 
+        name.includes("victoria") || 
+        name.includes("english") ||
+        name.includes("us ") ||
+        name.includes("uk ")
+      );
+    });
+    
+    // Sort by gender to put female voices first
+    return preferredVoices.sort((a, b) => {
+      if (a.gender === "female" && b.gender === "male") return -1;
+      if (a.gender === "male" && b.gender === "female") return 1;
+      return 0;
     });
   }
 };

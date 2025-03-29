@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Poem } from "@/services/poetryService";
 import PoemCard from "@/components/PoemCard";
-import { ArrowLeft, Share2, Mic, MicOff } from "lucide-react";
+import { ArrowLeft, Share2, Mic, MicOff, Volume2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { speechService } from "@/services/speechService";
@@ -23,6 +23,27 @@ const PoemDetails = () => {
       navigate("/poems");
     }
   }, [navigate]);
+
+  // Set up speech synthesis event listeners
+  useEffect(() => {
+    const handleSpeechEnd = () => {
+      if (window.speechSynthesis && !window.speechSynthesis.speaking) {
+        setIsReading(false);
+      }
+    };
+
+    // Check for speech status periodically
+    let interval: number | null = null;
+    if (isReading) {
+      interval = window.setInterval(handleSpeechEnd, 100);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isReading]);
 
   const goBack = () => {
     // Stop any ongoing reading when navigating away
@@ -55,7 +76,12 @@ const PoemDetails = () => {
   const readPoem = () => {
     if (!poem) return;
     
-    const poemText = `${poem.title} by ${poem.author}. ${poem.lines.join(". ")}`;
+    // Format the poem text for a better reading experience
+    const title = `${poem.title} by ${poem.author}.`;
+    
+    // Add pauses between stanzas for better rhythm
+    const poemLines = poem.lines.join(". ");
+    const poemText = `${title} ${poemLines}`;
     
     // Get the user's preferred voice if available
     let voice = null;
@@ -68,18 +94,15 @@ const PoemDetails = () => {
     setIsReading(true);
     speechService.speak(poemText, voice);
     
-    // Set up event listener to detect when speech has finished
-    const checkSpeaking = setInterval(() => {
-      if (!window.speechSynthesis.speaking) {
-        setIsReading(false);
-        clearInterval(checkSpeaking);
-      }
-    }, 100);
+    toast.success("Reading poem aloud", {
+      description: "Using " + (settings.preferredVoice?.name || "default voice")
+    });
   };
 
   const stopReading = () => {
     speechService.stop();
     setIsReading(false);
+    toast.success("Stopped reading");
   };
 
   if (!poem) {
@@ -129,7 +152,7 @@ const PoemDetails = () => {
               onClick={readPoem} 
               className="flex items-center gap-1"
             >
-              <Mic size={16} />
+              <Volume2 size={16} />
               <span>Read Aloud</span>
             </Button>
           )}

@@ -4,7 +4,6 @@ import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition } from '@capacit
 export const adService = {
   initialize: async (): Promise<void> => {
     await AdMob.initialize({
-      requestTrackingAuthorization: true,
       testingDevices: [],
       initializeForTesting: false
     });
@@ -14,7 +13,7 @@ export const adService = {
     const options: BannerAdOptions = {
       adId: 'ca-app-pub-3279473081670891/1003101920',
       adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: BannerAdPosition.BOTTOM,
+      position: BannerAdPosition.BOTTOM_CENTER,
       margin: 60, // Add margin to prevent overlapping with navbar
       isTesting: false
     };

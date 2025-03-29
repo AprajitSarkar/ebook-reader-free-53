@@ -23,11 +23,20 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const setDefaultFemaleVoice = () => {
       if (!settings.preferredVoice) {
-        const voices = speechService.getVoices();
-        const femaleVoice = voices.find(voice => voice.gender === "female");
+        // Try to get preferred voices first (better quality)
+        const preferredVoices = speechService.getPreferredVoices();
+        const femaleVoice = preferredVoices.find(voice => voice.gender === "female");
         
         if (femaleVoice) {
           setSettings(prev => ({ ...prev, preferredVoice: femaleVoice }));
+        } else {
+          // Fall back to any female voice
+          const allVoices = speechService.getVoices();
+          const anyFemaleVoice = allVoices.find(voice => voice.gender === "female");
+          
+          if (anyFemaleVoice) {
+            setSettings(prev => ({ ...prev, preferredVoice: anyFemaleVoice }));
+          }
         }
       }
     };
