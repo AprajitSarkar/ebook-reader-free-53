@@ -6,10 +6,15 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/");
+    console.log("Index page mounted, navigating to /poems");
+    navigate("/poems");
   }, [navigate]);
 
-  return null;
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+      <p>Initializing...</p>
+    </div>
+  );
 };
 
 export default Index;
