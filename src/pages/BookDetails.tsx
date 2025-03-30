@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, Heart, BookText, Play, Pause } from "lucide-react";
+import { BookOpen, ChevronLeft, Download, BookText, Play, Pause } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { speechService } from "@/services/speechService";
 
@@ -18,7 +18,6 @@ const BookDetails = () => {
   const [textContent, setTextContent] = useState<string>("");
   const [loadingText, setLoadingText] = useState<boolean>(false);
   const [speaking, setSpeaking] = useState<boolean>(false);
-  const [isLiked, setIsLiked] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useUserSettings();
@@ -39,14 +38,6 @@ const BookDetails = () => {
       try {
         const bookData = await gutendexService.getBookById(bookId);
         setBook(bookData);
-        
-        // Check if book is in liked books
-        try {
-          const likedBooks = JSON.parse(localStorage.getItem("likedBooks") || "[]");
-          setIsLiked(likedBooks.some((b: Book) => b.id === bookId));
-        } catch (err) {
-          console.error("Failed to check liked status:", err);
-        }
       } catch (err) {
         console.error("Failed to fetch book:", err);
         setError("Failed to load book details.");
@@ -113,31 +104,6 @@ const BookDetails = () => {
       });
     }
   };
-  
-  const toggleLiked = () => {
-    if (!book) return;
-    
-    try {
-      const likedBooks = JSON.parse(localStorage.getItem("likedBooks") || "[]");
-      
-      if (isLiked) {
-        // Remove from liked books
-        const updatedLikedBooks = likedBooks.filter((b: Book) => b.id !== bookId);
-        localStorage.setItem("likedBooks", JSON.stringify(updatedLikedBooks));
-        setIsLiked(false);
-        toast.success("Book removed from favorites");
-      } else {
-        // Add to liked books
-        likedBooks.push(book);
-        localStorage.setItem("likedBooks", JSON.stringify(likedBooks));
-        setIsLiked(true);
-        toast.success("Book added to favorites");
-      }
-    } catch (err) {
-      console.error("Failed to update liked books:", err);
-      toast.error("Failed to update favorites");
-    }
-  };
 
   useEffect(() => {
     // Clean up speech on unmount
@@ -201,38 +167,25 @@ const BookDetails = () => {
           Back
         </Button>
         
-        <div className="flex items-center gap-2">
+        {textContent && (
           <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={toggleLiked}
-            className="rounded-full"
+            variant="secondary"
+            size="sm"
+            onClick={handlePlayPause}
           >
-            <Heart 
-              className={`h-5 w-5 ${isLiked ? 'fill-primary text-primary' : 'text-muted-foreground'}`} 
-            />
+            {speaking ? (
+              <>
+                <Pause className="h-4 w-4 mr-2" />
+                Stop Reading
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Read Aloud
+              </>
+            )}
           </Button>
-          
-          {textContent && (
-            <Button 
-              variant="secondary"
-              size="sm"
-              onClick={handlePlayPause}
-            >
-              {speaking ? (
-                <>
-                  <Pause className="h-4 w-4 mr-2" />
-                  Stop Reading
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Read Aloud
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -271,14 +224,15 @@ const BookDetails = () => {
                   )}
                 </div>
                 
-                <Button 
-                  className="w-full"
-                  onClick={fetchTextContent}
-                  disabled={loadingText}
-                >
-                  <BookText className="mr-2 h-4 w-4" />
-                  Read Book
-                </Button>
+                {book.formats["text/html"] && (
+                  <Button 
+                    className="w-full"
+                    onClick={() => window.open(book.formats["text/html"], "_blank")}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Read in Browser
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -331,9 +285,16 @@ const BookDetails = () => {
                       {Object.keys(book.formats).map((format) => {
                         const shortFormat = format.split(';')[0].split('/')[1];
                         return (
-                          <Badge key={format} variant="outline" className="text-xs">
-                            {shortFormat}
-                          </Badge>
+                          <a 
+                            key={format} 
+                            href={book.formats[format]} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                          >
+                            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
+                              {shortFormat}
+                            </Badge>
+                          </a>
                         );
                       })}
                     </div>

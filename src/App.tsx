@@ -15,7 +15,6 @@ import Poems from "./pages/Poems";
 import Search from "./pages/Search";
 import PoemDetails from "./pages/PoemDetails";
 import LikedPoems from "./pages/LikedPoems";
-import LikedBooks from "./pages/LikedBooks";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Books from "./pages/Books";
@@ -108,15 +107,14 @@ const App = () => {
               <>
                 <div className="pb-24">
                   <Routes>
-                    <Route path="/" element={<Books />} />
-                    <Route path="/books" element={<Books />} />
+                    <Route path="/" element={<Poems />} />
                     <Route path="/poems" element={<Poems />} />
                     <Route path="/search" element={<Search />} />
                     <Route path="/poem-details" element={<PoemDetails />} />
-                    <Route path="/book-details" element={<BookDetails />} />
                     <Route path="/liked-poems" element={<LikedPoems />} />
-                    <Route path="/liked-books" element={<LikedBooks />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/books" element={<Books />} />
+                    <Route path="/book-details" element={<BookDetails />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
