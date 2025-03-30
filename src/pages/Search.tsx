@@ -2,17 +2,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { poetryService, Poem } from "@/services/poetryService";
+import { gutendexService, Book } from "@/services/gutendexService";
 import SearchBar from "@/components/SearchBar";
 import PoemCard from "@/components/PoemCard";
+import BookCard from "@/components/BookCard";
 import PoemSkeleton from "@/components/PoemSkeleton";
 import { toast } from "@/lib/toast";
-import { History, Plus, Trash2 } from "lucide-react";
+import { History, Trash2, BookOpen, BookText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 type SearchType = "title" | "author" | "lines";
+type ContentType = "poems" | "books";
 
 const Search = () => {
+  const [contentType, setContentType] = useState<ContentType>("books");
   const [searchType, setSearchType] = useState<SearchType>("title");
-  const [results, setResults] = useState<Poem[]>([]);
+  const [poemResults, setPoemResults] = useState<Poem[]>([]);
+  const [bookResults, setBookResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -43,28 +50,38 @@ const Search = () => {
     setShowHistory(false);
     
     try {
-      let searchResults: Poem[] = [];
-      
-      switch (searchType) {
-        case "title":
-          searchResults = await poetryService.searchByTitle(query);
-          break;
-        case "author":
-          searchResults = await poetryService.searchByAuthor(query);
-          break;
-        case "lines":
-          searchResults = await poetryService.searchByLines(query);
-          break;
-      }
-      
-      setResults(searchResults);
-      
-      if (searchResults.length === 0) {
-        toast.info("No poems found matching your search");
+      if (contentType === "poems") {
+        let searchResults: Poem[] = [];
+        
+        switch (searchType) {
+          case "title":
+            searchResults = await poetryService.searchByTitle(query);
+            break;
+          case "author":
+            searchResults = await poetryService.searchByAuthor(query);
+            break;
+          case "lines":
+            searchResults = await poetryService.searchByLines(query);
+            break;
+        }
+        
+        setPoemResults(searchResults);
+        
+        if (searchResults.length === 0) {
+          toast.info("No poems found matching your search");
+        }
+      } else {
+        // Book search
+        const response = await gutendexService.searchBooks(query);
+        setBookResults(response.results);
+        
+        if (response.results.length === 0) {
+          toast.info("No books found matching your search");
+        }
       }
     } catch (error) {
       console.error("Search error:", error);
-      toast.error("Error searching for poems");
+      toast.error(`Error searching for ${contentType}`);
     } finally {
       setLoading(false);
     }
@@ -79,28 +96,33 @@ const Search = () => {
     setLoadingSuggestions(true);
     
     try {
-      let suggestionResults: string[] = [];
-      
-      switch (searchType) {
-        case "title":
-          const titleResult = await poetryService.getTitles();
-          suggestionResults = titleResult.titles
-            .filter(title => title.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, 5);
-          break;
-        case "author":
-          const authorResult = await poetryService.getAuthors();
-          suggestionResults = authorResult.authors
-            .filter(author => author.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, 5);
-          break;
-        case "lines":
-          // For lines search, we don't have a pre-existing list, so let's just show the current query
-          suggestionResults = [query];
-          break;
+      if (contentType === "poems") {
+        let suggestionResults: string[] = [];
+        
+        switch (searchType) {
+          case "title":
+            const titleResult = await poetryService.getTitles();
+            suggestionResults = titleResult.titles
+              .filter(title => title.toLowerCase().includes(query.toLowerCase()))
+              .slice(0, 5);
+            break;
+          case "author":
+            const authorResult = await poetryService.getAuthors();
+            suggestionResults = authorResult.authors
+              .filter(author => author.toLowerCase().includes(query.toLowerCase()))
+              .slice(0, 5);
+            break;
+          case "lines":
+            // For lines search, we don't have a pre-existing list
+            suggestionResults = [query];
+            break;
+        }
+        
+        setSuggestions(suggestionResults);
+      } else {
+        // For book search, we don't have API for suggestions
+        setSuggestions([query]);
       }
-      
-      setSuggestions(suggestionResults);
     } catch (error) {
       console.error("Error fetching suggestions:", error);
     } finally {
@@ -119,13 +141,13 @@ const Search = () => {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [currentQuery, searchType]);
+  }, [currentQuery, searchType, contentType]);
 
   // Reset suggestions when search type changes
   useEffect(() => {
     setSuggestions([]);
     setCurrentQuery("");
-  }, [searchType]);
+  }, [searchType, contentType]);
 
   const handleQueryChange = (query: string) => {
     setCurrentQuery(query);
@@ -134,6 +156,10 @@ const Search = () => {
   const viewPoemDetails = (poem: Poem) => {
     sessionStorage.setItem("selectedPoem", JSON.stringify(poem));
     navigate("/poem-details");
+  };
+  
+  const viewBookDetails = (bookId: number) => {
+    navigate(`/book-details?id=${bookId}`);
   };
 
   const clearSearchHistory = () => {
@@ -150,32 +176,49 @@ const Search = () => {
   return (
     <div className="container px-4 py-12 pb-24 min-h-screen">
       <h1 className="text-2xl font-serif font-bold text-center mb-8 gradient-text">
-        Find Your Poem
+        Find Content
       </h1>
       
       <div className="flex justify-center mb-6">
-        <div className="inline-flex rounded-lg p-1 bg-secondary/30">
-          {(["title", "author", "lines"] as SearchType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => setSearchType(type)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                searchType === type
-                  ? "bg-primary text-primary-foreground shadow-lg"
-                  : "text-foreground/70 hover:text-foreground"
-              }`}
-            >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </button>
-          ))}
-        </div>
+        <Tabs defaultValue="books" onValueChange={(value) => setContentType(value as ContentType)} className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="books">
+              <BookOpen className="mr-2 h-4 w-4" />
+              Books
+            </TabsTrigger>
+            <TabsTrigger value="poems">
+              <BookText className="mr-2 h-4 w-4" />
+              Poems
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+      
+      {contentType === "poems" && (
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex rounded-lg p-1 bg-secondary/30">
+            {(["title", "author", "lines"] as SearchType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setSearchType(type)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  searchType === type
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "text-foreground/70 hover:text-foreground"
+                }`}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="relative">
         <div className="flex items-center mb-2">
           <SearchBar 
             onSearch={handleSearch} 
-            placeholder={`Search by ${searchType}...`}
+            placeholder={contentType === "poems" ? `Search ${searchType}...` : "Search books by title or author..."}
             suggestions={suggestions}
             isLoading={loadingSuggestions}
             onQueryChange={handleQueryChange}
@@ -228,26 +271,61 @@ const Search = () => {
           </div>
         ) : (
           <>
-            {hasSearched && results.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-foreground/70">No poems found</p>
-                <p className="text-sm text-foreground/50 mt-2">
-                  Try a different search term or category
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {results.map((poem, index) => (
-                  <div 
-                    key={index} 
-                    onClick={() => viewPoemDetails(poem)}
-                    className="cursor-pointer animate-fade-in"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <PoemCard poem={poem} />
+            {contentType === "poems" ? (
+              <>
+                {hasSearched && poemResults.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-foreground/70">No poems found</p>
+                    <p className="text-sm text-foreground/50 mt-2">
+                      Try a different search term or category
+                    </p>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="space-y-6">
+                    {poemResults.map((poem, index) => (
+                      <div 
+                        key={index} 
+                        onClick={() => viewPoemDetails(poem)}
+                        className="cursor-pointer animate-fade-in"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <PoemCard poem={poem} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {hasSearched && bookResults.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-foreground/70">No books found</p>
+                    <p className="text-sm text-foreground/50 mt-2">
+                      Try a different search term
+                    </p>
+                    <Button 
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => navigate("/books")}
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Browse Popular Books
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {bookResults.map((book) => (
+                      <div 
+                        key={book.id}
+                        onClick={() => viewBookDetails(book.id)}
+                        className="cursor-pointer animate-fade-in"
+                      >
+                        <BookCard book={book} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
