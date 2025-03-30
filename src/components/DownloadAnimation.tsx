@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, X } from "lucide-react";
+import { CheckCircle2, Download, X, Sparkles } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/lib/toast";
 
@@ -40,20 +40,24 @@ const DownloadAnimation = ({ isOpen, onClose, filename }: DownloadAnimationProps
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-card rounded-lg shadow-lg p-6 w-[90%] max-w-md border">
+      <div className="bg-card rounded-lg shadow-lg p-6 w-[90%] max-w-md border animate-scale-in">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium">
+          <h3 className="text-lg font-medium gradient-text">
             {status === "downloading" ? "Downloading..." : status === "completed" ? "Download Complete" : "Download Failed"}
           </h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-2 animate-fade-in">
             <p className="text-sm text-muted-foreground line-clamp-1">{filename}</p>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-2 overflow-hidden">
+              {status === "completed" && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/50 via-primary to-accent/80 animate-shimmer"></div>
+              )}
+            </Progress>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{progress}%</span>
               <span>{Math.round((progress / 100) * 2.5 * 10) / 10} MB / 2.5 MB</span>
@@ -62,11 +66,17 @@ const DownloadAnimation = ({ isOpen, onClose, filename }: DownloadAnimationProps
 
           <div className="flex justify-center">
             {status === "downloading" ? (
-              <Download className="h-12 w-12 text-primary animate-bounce" />
+              <div className="sparkle-element">
+                <Download className="h-16 w-16 text-primary animate-bounce-gentle" />
+              </div>
             ) : status === "completed" ? (
-              <CheckCircle2 className="h-12 w-12 text-green-500 animate-pulse" />
+              <div className="relative">
+                <CheckCircle2 className="h-16 w-16 text-green-500 animate-expand" />
+                <Sparkles className="absolute -top-3 -right-3 h-8 w-8 text-yellow-300 animate-sparkle" />
+                <Sparkles className="absolute -bottom-3 -left-3 h-6 w-6 text-primary animate-sparkle" style={{ animationDelay: "0.4s" }} />
+              </div>
             ) : (
-              <X className="h-12 w-12 text-red-500" />
+              <X className="h-16 w-16 text-red-500 animate-pulse" />
             )}
           </div>
         </div>
