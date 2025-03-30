@@ -188,7 +188,7 @@ const BookDetails = () => {
     setBrowserOpen(true);
   };
 
-  const handleOpenInBrowser = () => {
+  const handleReadInBrowser = () => {
     if (!book) return;
     
     const urlToOpen = book.formats["text/html"] || 
@@ -389,7 +389,7 @@ const BookDetails = () => {
                   {book.formats["text/html"] && (
                     <Button 
                       className="w-full"
-                      onClick={() => handleOpenInAppBrowser(book.formats["text/html"], `${book.title} - HTML`)}
+                      onClick={handleReadInBrowser}
                     >
                       <BookOpen className="mr-2 h-4 w-4" />
                       Read in Browser
