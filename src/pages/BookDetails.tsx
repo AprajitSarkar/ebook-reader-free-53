@@ -94,9 +94,11 @@ const BookDetails = () => {
         .filter(chunk => chunk.trim().length > 0)
         .slice(0, 100); // Limit to first 100 sentences to prevent overload
       
+      // Use the updated speechService that handles VoiceOption
       speechService.speak(chunks.join(' '), settings.preferredVoice);
       setSpeaking(true);
       
+      // Set up end callback
       speechService.onEnd(() => {
         setSpeaking(false);
       });

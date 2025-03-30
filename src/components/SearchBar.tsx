@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -10,6 +10,7 @@ interface SearchBarProps {
   suggestions?: string[];
   isLoading?: boolean;
   onQueryChange?: (query: string) => void;
+  icon?: ReactNode; // Add icon prop
 }
 
 const SearchBar = ({ 
@@ -17,7 +18,8 @@ const SearchBar = ({
   placeholder = "Search for poems...", 
   suggestions = [],
   isLoading = false,
-  onQueryChange
+  onQueryChange,
+  icon // Add icon to destructuring
 }: SearchBarProps) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -73,7 +75,13 @@ const SearchBar = ({
                      text-foreground outline-none border border-transparent
                      focus:border-primary/50 transition-all"
           />
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-foreground/60" size={18} />
+          {icon ? (
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-foreground/60">
+              {icon}
+            </span>
+          ) : (
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-foreground/60" size={18} />
+          )}
           
           {query && (
             <button 

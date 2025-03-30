@@ -1,4 +1,3 @@
-
 export interface VoiceOption {
   id: string;
   name: string;
@@ -8,7 +7,7 @@ export interface VoiceOption {
 }
 
 export const speechService = {
-  speak: (text: string, voice?: SpeechSynthesisVoice): void => {
+  speak: (text: string, voice?: VoiceOption | SpeechSynthesisVoice): void => {
     if (!window.speechSynthesis) {
       console.error("Speech synthesis not supported in this browser");
       return;
@@ -20,8 +19,21 @@ export const speechService = {
     const utterance = new SpeechSynthesisUtterance(text);
     
     if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
+      // If it's a VoiceOption (our custom type)
+      if ('id' in voice) {
+        // Find the actual SpeechSynthesisVoice from browser
+        const browserVoices = window.speechSynthesis.getVoices();
+        const matchingVoice = browserVoices.find(v => v.voiceURI === voice.id);
+        
+        if (matchingVoice) {
+          utterance.voice = matchingVoice;
+          utterance.lang = matchingVoice.lang;
+        }
+      } else {
+        // It's already a SpeechSynthesisVoice
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      }
     } else {
       // If no voice is provided, try to find a female voice
       const voices = window.speechSynthesis.getVoices();
@@ -49,6 +61,27 @@ export const speechService = {
   stop: (): void => {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
+    }
+  },
+
+  onEnd: (callback: () => void): void => {
+    if (!window.speechSynthesis) {
+      return;
+    }
+
+    // Get all active utterances
+    const utterances = window.speechSynthesis.getVoices();
+    
+    // Set up event listener for the end event
+    if (utterances.length > 0) {
+      const utterance = new SpeechSynthesisUtterance();
+      utterance.onend = () => {
+        callback();
+      };
+      // We're not speaking this utterance, just using it for the callback
+    } else {
+      // If no utterances are active, call the callback directly
+      setTimeout(callback, 100);
     }
   },
 
