@@ -6,11 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, Download, BookText, Play, Pause, Heart, ExternalLink } from "lucide-react";
+import { BookOpen, ChevronLeft, Download, BookText, Play, Pause, Heart, ExternalLink, Share2, Copy, Link } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { speechService } from "@/services/speechService";
 import InAppBrowser from "@/components/InAppBrowser";
 import DownloadAnimation from "@/components/DownloadAnimation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 const likedBooksService = {
   getLikedBooks: (): Book[] => {
@@ -149,6 +155,33 @@ const BookDetails = () => {
     }
   };
 
+  const handleShare = async (method: 'copy' | 'share' | 'link') => {
+    if (!book) return;
+    
+    const bookInfo = `${book.title} by ${book.authors.map(a => a.name).join(', ')}`;
+    const shareText = `Check out this book: ${bookInfo}\n\nRead it on Poetic Clouds app`;
+    
+    if (method === 'copy') {
+      await navigator.clipboard.writeText(shareText);
+      toast.success("Book info copied to clipboard!");
+    } else if (method === 'share' && navigator.share) {
+      try {
+        await navigator.share({
+          title: bookInfo,
+          text: shareText,
+          url: window.location.href,
+        });
+        toast.success("Book shared successfully!");
+      } catch (error) {
+        console.error("Error sharing", error);
+        toast.error("Could not share book");
+      }
+    } else if (method === 'link') {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  };
+
   const handleOpenInAppBrowser = (url: string, title: string) => {
     setBrowserUrl(url);
     setBrowserTitle(title);
@@ -261,6 +294,30 @@ const BookDetails = () => {
         </Button>
         
         <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => handleShare('copy')} className="cursor-pointer">
+                <Copy className="mr-2 h-4 w-4" />
+                <span>Copy to clipboard</span>
+              </DropdownMenuItem>
+              {navigator.share && (
+                <DropdownMenuItem onClick={() => handleShare('share')} className="cursor-pointer">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span>Share via...</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => handleShare('link')} className="cursor-pointer">
+                <Link className="mr-2 h-4 w-4" />
+                <span>Copy link</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button 
             variant="outline"
             size="icon"

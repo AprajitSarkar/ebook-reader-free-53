@@ -3,11 +3,17 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Poem } from "@/services/poetryService";
 import PoemCard from "@/components/PoemCard";
-import { ArrowLeft, Share2, Mic, MicOff, Volume2 } from "lucide-react";
+import { ArrowLeft, Share2, Mic, MicOff, Volume2, Copy, Link, MessageSquare } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { speechService } from "@/services/speechService";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 const PoemDetails = () => {
   const [poem, setPoem] = useState<Poem | null>(null);
@@ -53,23 +59,34 @@ const PoemDetails = () => {
     navigate(-1);
   };
 
-  const sharePoem = () => {
-    if (poem) {
-      // Create a formatted poem text with title, author, and poem text
-      const poemText = `${poem.title}\nby ${poem.author}\n\n${poem.lines.join("\n")}\n\nShared from Poetic Clouds app\nGet it on Play Store: https://play.google.com/store/apps/details?id=com.hitmouse`;
-      
-      if (navigator.share) {
-        navigator
-          .share({
-            title: `${poem.title} by ${poem.author}`,
-            text: poemText,
-          })
-          .catch((error) => console.log("Error sharing", error));
-      } else {
-        // Fallback for browsers that don't support the Web Share API
-        navigator.clipboard.writeText(poemText);
-        toast.success("Poem copied to clipboard!");
+  const sharePoem = async (method: 'copy' | 'share' | 'text') => {
+    if (!poem) return;
+    
+    // Create a formatted poem text with title, author, and poem text
+    const poemText = `${poem.title}\nby ${poem.author}\n\n${poem.lines.join("\n")}\n\nShared from Poetic Clouds app`;
+    
+    if (method === 'copy') {
+      await navigator.clipboard.writeText(poemText);
+      toast.success("Poem copied to clipboard!");
+    } else if (method === 'share' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${poem.title} by ${poem.author}`,
+          text: poemText,
+        });
+        toast.success("Poem shared successfully!");
+      } catch (error) {
+        console.log("Error sharing", error);
+        toast.error("Could not share poem");
       }
+    } else if (method === 'text') {
+      // Fallback for SMS sharing on mobile
+      const smsUrl = `sms:?body=${encodeURIComponent(poemText)}`;
+      window.open(smsUrl, '_blank');
+    } else {
+      // Fallback if Web Share API is not available
+      await navigator.clipboard.writeText(poemText);
+      toast.success("Poem copied to clipboard!");
     }
   };
 
@@ -129,13 +146,30 @@ const PoemDetails = () => {
             {poem.title}
           </h1>
           
-          <button
-            onClick={sharePoem}
-            className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors"
-          >
-            <Share2 size={18} />
-            <span>Share</span>
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors">
+                <Share2 size={18} />
+                <span>Share</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => sharePoem('copy')} className="cursor-pointer">
+                <Copy className="mr-2 h-4 w-4" />
+                <span>Copy to clipboard</span>
+              </DropdownMenuItem>
+              {navigator.share && (
+                <DropdownMenuItem onClick={() => sharePoem('share')} className="cursor-pointer">
+                  <Link className="mr-2 h-4 w-4" />
+                  <span>Share via...</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => sharePoem('text')} className="cursor-pointer">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span>Share as text message</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
