@@ -7,9 +7,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, Download, BookText, Play, Pause } from "lucide-react";
+import { BookOpen, ChevronLeft, Download, BookText, Play, Pause, Heart } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { speechService } from "@/services/speechService";
+import InAppBrowser from "@/components/InAppBrowser";
+import DownloadAnimation from "@/components/DownloadAnimation";
+
+// Create a service for managing liked books
+const likedBooksService = {
+  getLikedBooks: (): Book[] => {
+    const books = localStorage.getItem('likedBooks');
+    return books ? JSON.parse(books) : [];
+  },
+  
+  isBookLiked: (bookId: number): boolean => {
+    const likedBooks = likedBooksService.getLikedBooks();
+    return likedBooks.some(book => book.id === bookId);
+  },
+  
+  toggleLikeBook: (book: Book): boolean => {
+    const likedBooks = likedBooksService.getLikedBooks();
+    const isLiked = likedBooks.some(b => b.id === book.id);
+    
+    let newLikedBooks: Book[];
+    if (isLiked) {
+      newLikedBooks = likedBooks.filter(b => b.id !== book.id);
+      toast.info("Book removed from favorites");
+    } else {
+      newLikedBooks = [...likedBooks, book];
+      toast.success("Book added to favorites");
+    }
+    
+    localStorage.setItem('likedBooks', JSON.stringify(newLikedBooks));
+    return !isLiked;
+  }
+};
 
 const BookDetails = () => {
   const [book, setBook] = useState<Book | null>(null);
@@ -18,6 +50,12 @@ const BookDetails = () => {
   const [textContent, setTextContent] = useState<string>("");
   const [loadingText, setLoadingText] = useState<boolean>(false);
   const [speaking, setSpeaking] = useState<boolean>(false);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [browserOpen, setBrowserOpen] = useState<boolean>(false);
+  const [browserUrl, setBrowserUrl] = useState<string>("");
+  const [browserTitle, setBrowserTitle] = useState<string>("");
+  const [showDownloadAnimation, setShowDownloadAnimation] = useState<boolean>(false);
+  
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useUserSettings();
@@ -38,6 +76,7 @@ const BookDetails = () => {
       try {
         const bookData = await gutendexService.getBookById(bookId);
         setBook(bookData);
+        setIsLiked(likedBooksService.isBookLiked(bookData.id));
       } catch (err) {
         console.error("Failed to fetch book:", err);
         setError("Failed to load book details.");
@@ -94,15 +133,63 @@ const BookDetails = () => {
         .filter(chunk => chunk.trim().length > 0)
         .slice(0, 100); // Limit to first 100 sentences to prevent overload
       
-      // Use the updated speechService that handles VoiceOption
       speechService.speak(chunks.join(' '), settings.preferredVoice);
       setSpeaking(true);
       
-      // Set up end callback
       speechService.onEnd(() => {
         setSpeaking(false);
       });
     }
+  };
+
+  const handleToggleLike = () => {
+    if (book) {
+      const newIsLiked = likedBooksService.toggleLikeBook(book);
+      setIsLiked(newIsLiked);
+    }
+  };
+
+  const handleOpenInAppBrowser = (url: string, title: string) => {
+    setBrowserUrl(url);
+    setBrowserTitle(title);
+    setBrowserOpen(true);
+  };
+
+  const handleDownload = () => {
+    if (!book) return;
+    
+    // Show download animation
+    setShowDownloadAnimation(true);
+    
+    // After animation completes, let the actual download happen
+    setTimeout(() => {
+      const link = document.createElement('a');
+      
+      // Find the best format to download
+      const downloadUrl = book.formats["text/plain"] || 
+                         book.formats["application/epub+zip"] || 
+                         book.formats["application/pdf"] ||
+                         book.formats["text/html"];
+                         
+      if (downloadUrl) {
+        link.href = downloadUrl;
+        link.download = `${book.title}.${getFileExtension(downloadUrl)}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }, 2000);
+  };
+  
+  const getFileExtension = (url: string): string => {
+    // Extract file extension from URL or mime type
+    if (url.includes('text/plain')) return 'txt';
+    if (url.includes('application/epub+zip')) return 'epub';
+    if (url.includes('application/pdf')) return 'pdf';
+    if (url.includes('text/html')) return 'html';
+    
+    // Default extension
+    return 'txt';
   };
 
   useEffect(() => {
@@ -167,25 +254,36 @@ const BookDetails = () => {
           Back
         </Button>
         
-        {textContent && (
+        <div className="flex gap-2">
           <Button 
-            variant="secondary"
-            size="sm"
-            onClick={handlePlayPause}
+            variant="outline"
+            size="icon"
+            onClick={handleToggleLike}
+            className={isLiked ? "text-red-500" : ""}
           >
-            {speaking ? (
-              <>
-                <Pause className="h-4 w-4 mr-2" />
-                Stop Reading
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4 mr-2" />
-                Read Aloud
-              </>
-            )}
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
           </Button>
-        )}
+          
+          {textContent && (
+            <Button 
+              variant="secondary"
+              size="sm"
+              onClick={handlePlayPause}
+            >
+              {speaking ? (
+                <>
+                  <Pause className="h-4 w-4 mr-2" />
+                  Stop Reading
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Read Aloud
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -224,15 +322,26 @@ const BookDetails = () => {
                   )}
                 </div>
                 
-                {book.formats["text/html"] && (
+                <div className="flex flex-col gap-2">
+                  {book.formats["text/html"] && (
+                    <Button 
+                      className="w-full"
+                      onClick={() => handleOpenInAppBrowser(book.formats["text/html"], `${book.title} - HTML`)}
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Read in Browser
+                    </Button>
+                  )}
+                  
                   <Button 
+                    variant="outline"
                     className="w-full"
-                    onClick={() => window.open(book.formats["text/html"], "_blank")}
+                    onClick={handleDownload}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Read in Browser
+                    Download Book
                   </Button>
-                )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -285,16 +394,14 @@ const BookDetails = () => {
                       {Object.keys(book.formats).map((format) => {
                         const shortFormat = format.split(';')[0].split('/')[1];
                         return (
-                          <a 
+                          <Badge 
                             key={format} 
-                            href={book.formats[format]} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:bg-accent"
+                            onClick={() => handleOpenInAppBrowser(book.formats[format], `${book.title} - ${shortFormat}`)}
                           >
-                            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
-                              {shortFormat}
-                            </Badge>
-                          </a>
+                            {shortFormat}
+                          </Badge>
                         );
                       })}
                     </div>
@@ -360,6 +467,21 @@ const BookDetails = () => {
           </Card>
         </div>
       </div>
+
+      {/* In-App Browser */}
+      <InAppBrowser
+        url={browserUrl}
+        isOpen={browserOpen}
+        onClose={() => setBrowserOpen(false)}
+        title={browserTitle}
+      />
+
+      {/* Download Animation */}
+      <DownloadAnimation
+        isOpen={showDownloadAnimation}
+        onClose={() => setShowDownloadAnimation(false)}
+        filename={book ? `${book.title}.${getFileExtension(book.formats["text/plain"] || book.formats["application/pdf"] || "")}` : ""}
+      />
     </div>
   );
 };
