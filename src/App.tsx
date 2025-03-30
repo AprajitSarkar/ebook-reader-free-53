@@ -23,13 +23,22 @@ import BookDetails from "./pages/BookDetails";
 // Components
 import Navbar from "./components/Navbar";
 import SplashScreen from "./components/SplashScreen";
+import OfflineNotice from "./components/OfflineNotice";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      retryDelay: 1000,
+    },
+  },
+});
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showOfflineNotice, setShowOfflineNotice] = useState(false);
 
   const hideSplash = () => {
     console.log("Splash screen completed, showing main app");
@@ -40,12 +49,23 @@ const App = () => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      setShowOfflineNotice(false);
       toast.success("You're back online");
     };
 
     const handleOffline = () => {
       setIsOnline(false);
       toast.warning("You're offline. Some features may be limited.");
+      
+      // Only show the offline notice if the app is already loaded (past splash screen)
+      if (!showSplash) {
+        // Add a small delay to prevent showing the notice on brief connection fluctuations
+        setTimeout(() => {
+          if (!navigator.onLine) {
+            setShowOfflineNotice(true);
+          }
+        }, 2000);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -55,7 +75,7 @@ const App = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [showSplash]);
 
   useEffect(() => {
     // Force dark mode
@@ -95,6 +115,14 @@ const App = () => {
     return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading...</div>;
   }
 
+  const handleOfflineRetry = () => {
+    if (navigator.onLine) {
+      setShowOfflineNotice(false);
+      // Force refresh data
+      queryClient.invalidateQueries();
+    }
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <UserSettingsProvider>
@@ -105,20 +133,28 @@ const App = () => {
           <BrowserRouter>
             {!showSplash && (
               <>
-                <div className="pb-24">
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/books" replace />} />
-                    <Route path="/poems" element={<Poems />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/poem-details" element={<PoemDetails />} />
-                    <Route path="/liked-poems" element={<LikedPoems />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/books" element={<Books />} />
-                    <Route path="/book-details" element={<BookDetails />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-                <Navbar />
+                {showOfflineNotice ? (
+                  <div className="h-screen">
+                    <OfflineNotice onRetry={handleOfflineRetry} />
+                  </div>
+                ) : (
+                  <>
+                    <div className="pb-24">
+                      <Routes>
+                        <Route path="/" element={<Navigate to="/books" replace />} />
+                        <Route path="/poems" element={<Poems />} />
+                        <Route path="/search" element={<Search />} />
+                        <Route path="/poem-details" element={<PoemDetails />} />
+                        <Route path="/liked-poems" element={<LikedPoems />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/books" element={<Books />} />
+                        <Route path="/book-details" element={<BookDetails />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </div>
+                    <Navbar />
+                  </>
+                )}
               </>
             )}
           </BrowserRouter>

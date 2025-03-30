@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Book, gutendexService } from "@/services/gutendexService";
@@ -7,13 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
-import { BookOpen, ChevronLeft, Download, BookText, Play, Pause, Heart } from "lucide-react";
+import { BookOpen, ChevronLeft, Download, BookText, Play, Pause, Heart, ExternalLink } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { speechService } from "@/services/speechService";
 import InAppBrowser from "@/components/InAppBrowser";
 import DownloadAnimation from "@/components/DownloadAnimation";
 
-// Create a service for managing liked books
 const likedBooksService = {
   getLikedBooks: (): Book[] => {
     const books = localStorage.getItem('likedBooks');
@@ -55,13 +53,13 @@ const BookDetails = () => {
   const [browserUrl, setBrowserUrl] = useState<string>("");
   const [browserTitle, setBrowserTitle] = useState<string>("");
   const [showDownloadAnimation, setShowDownloadAnimation] = useState<boolean>(false);
-  
+  const [textLoadError, setTextLoadError] = useState<boolean>(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useUserSettings();
   const contentRef = useRef<HTMLDivElement>(null);
-  
-  // Get book ID from URL query parameter
+
   const params = new URLSearchParams(location.search);
   const bookId = Number(params.get("id"));
 
@@ -93,9 +91,9 @@ const BookDetails = () => {
     if (!book) return;
     
     setLoadingText(true);
+    setTextLoadError(false);
     
     try {
-      // Try to find a text format to display
       const textUrl = 
         book.formats["text/plain"] || 
         book.formats["text/plain; charset=us-ascii"] ||
@@ -104,6 +102,7 @@ const BookDetails = () => {
       if (!textUrl) {
         toast.error("No readable text format available for this book");
         setLoadingText(false);
+        setTextLoadError(true);
         return;
       }
       
@@ -113,6 +112,7 @@ const BookDetails = () => {
       console.error("Failed to fetch text content:", err);
       toast.error("Failed to load book content");
       setTextContent("");
+      setTextLoadError(true);
     } finally {
       setLoadingText(false);
     }
@@ -131,7 +131,7 @@ const BookDetails = () => {
       const chunks = textContent
         .split(/(?<=\.|\!|\?)\s+/)
         .filter(chunk => chunk.trim().length > 0)
-        .slice(0, 100); // Limit to first 100 sentences to prevent overload
+        .slice(0, 100);
       
       speechService.speak(chunks.join(' '), settings.preferredVoice);
       setSpeaking(true);
@@ -155,17 +155,28 @@ const BookDetails = () => {
     setBrowserOpen(true);
   };
 
+  const handleOpenInBrowser = () => {
+    if (!book) return;
+    
+    const urlToOpen = book.formats["text/html"] || 
+                     book.formats["text/plain"] || 
+                     book.formats["application/pdf"];
+                     
+    if (urlToOpen) {
+      window.open(urlToOpen, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("No suitable format found for this book");
+    }
+  };
+
   const handleDownload = () => {
     if (!book) return;
     
-    // Show download animation
     setShowDownloadAnimation(true);
     
-    // After animation completes, let the actual download happen
     setTimeout(() => {
       const link = document.createElement('a');
       
-      // Find the best format to download
       const downloadUrl = book.formats["text/plain"] || 
                          book.formats["application/epub+zip"] || 
                          book.formats["application/pdf"] ||
@@ -180,20 +191,17 @@ const BookDetails = () => {
       }
     }, 2000);
   };
-  
+
   const getFileExtension = (url: string): string => {
-    // Extract file extension from URL or mime type
     if (url.includes('text/plain')) return 'txt';
     if (url.includes('application/epub+zip')) return 'epub';
     if (url.includes('application/pdf')) return 'pdf';
     if (url.includes('text/html')) return 'html';
     
-    // Default extension
     return 'txt';
   };
 
   useEffect(() => {
-    // Clean up speech on unmount
     return () => {
       speechService.stop();
     };
@@ -227,13 +235,11 @@ const BookDetails = () => {
     );
   }
 
-  // Get cover image if available
   const coverImage = book.formats["image/jpeg"] || 
                     book.formats["image/png"] || 
                     book.formats["image/jpg"] || 
                     "/placeholder.svg";
 
-  // Format author names
   const authorNames = book.authors.map(author => {
     let name = author.name;
     if (author.birth_year || author.death_year) {
@@ -356,7 +362,7 @@ const BookDetails = () => {
                   <TabsTrigger value="read">Read Book</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="info" className="space-y-6">
+                <TabsContent value="info">
                   {book.subjects.length > 0 && (
                     <div>
                       <h3 className="text-lg font-medium mb-2">Subjects</h3>
@@ -422,7 +428,7 @@ const BookDetails = () => {
                 </TabsContent>
                 
                 <TabsContent value="read">
-                  {!textContent && !loadingText && (
+                  {!textContent && !loadingText && !textLoadError && (
                     <div className="flex flex-col items-center justify-center py-12">
                       <BookText className="h-16 w-16 text-muted-foreground" />
                       <h3 className="mt-4 text-xl font-semibold">Read Book Content</h3>
@@ -435,6 +441,30 @@ const BookDetails = () => {
                       >
                         Load Book Content
                       </Button>
+                    </div>
+                  )}
+                  
+                  {!textContent && !loadingText && textLoadError && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <BookText className="h-16 w-16 text-muted-foreground/50" />
+                      <h3 className="mt-4 text-xl font-semibold text-destructive">Failed to Load Content</h3>
+                      <p className="text-muted-foreground text-center my-2">
+                        We couldn't load the book content in the app.
+                      </p>
+                      <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 mt-4">
+                        <Button 
+                          onClick={fetchTextContent}
+                        >
+                          Try Again
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={handleOpenInBrowser}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Open in Browser
+                        </Button>
+                      </div>
                     </div>
                   )}
                   
@@ -468,7 +498,6 @@ const BookDetails = () => {
         </div>
       </div>
 
-      {/* In-App Browser */}
       <InAppBrowser
         url={browserUrl}
         isOpen={browserOpen}
@@ -476,7 +505,6 @@ const BookDetails = () => {
         title={browserTitle}
       />
 
-      {/* Download Animation */}
       <DownloadAnimation
         isOpen={showDownloadAnimation}
         onClose={() => setShowDownloadAnimation(false)}
