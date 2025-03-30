@@ -516,7 +516,7 @@ const BookDetails = () => {
                         </Button>
                         <Button 
                           variant="outline"
-                          onClick={handleOpenInBrowser}
+                          onClick={handleReadInBrowser}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Open in Browser
