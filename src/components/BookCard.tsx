@@ -6,13 +6,18 @@ import { useNavigate } from "react-router-dom";
 
 interface BookCardProps {
   book: Book;
+  onClick?: () => void; // Make onClick optional
 }
 
-const BookCard = ({ book }: BookCardProps) => {
+const BookCard = ({ book, onClick }: BookCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/book-details?id=${book.id}`);
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/book-details?id=${book.id}`);
+    }
   };
 
   // Get cover image if available
