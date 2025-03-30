@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Book } from "@/services/gutendexService";
 import { Poem } from "@/services/poetryService";
@@ -73,14 +72,12 @@ const LikedBooks = () => {
 
     const query = searchQuery.toLowerCase();
     
-    // Filter books
     const matchedBooks = likedBooks.filter(book => 
       book.title.toLowerCase().includes(query) || 
       book.authors.some(author => author.name.toLowerCase().includes(query))
     );
     setFilteredBooks(matchedBooks);
     
-    // Filter poems
     const matchedPoems = likedPoems.filter(poem => 
       poem.title.toLowerCase().includes(query) || 
       poem.author.toLowerCase().includes(query) ||
@@ -101,6 +98,20 @@ const LikedBooks = () => {
     }
   };
 
+  const handleRemovePoem = (poem: Poem) => {
+    try {
+      const updatedPoems = likedPoems.filter(p => 
+        !(p.title === poem.title && p.author === poem.author)
+      );
+      localStorage.setItem('likedPoems', JSON.stringify(updatedPoems));
+      setLikedPoems(updatedPoems);
+      toast.success("Poem removed from favorites");
+    } catch (error) {
+      console.error("Error removing poem:", error);
+      toast.error("Failed to remove poem");
+    }
+  };
+
   const handleClearAll = () => {
     try {
       if (activeTab === "books") {
@@ -111,7 +122,6 @@ const LikedBooks = () => {
         localStorage.setItem('likedPoems', JSON.stringify([]));
         setLikedPoems([]);
         setFilteredPoems([]);
-        // Stop any ongoing reading when clearing poems
         speechService.stop();
         setSpeakingPoemId(null);
       }
@@ -137,16 +147,12 @@ const LikedBooks = () => {
   };
 
   const readPoem = (poem: Poem, index: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent navigating to poem details
+    e.stopPropagation();
     
-    // Format the poem text for a better reading experience
     const title = `${poem.title} by ${poem.author}.`;
-    
-    // Add pauses between stanzas for better rhythm
     const poemLines = poem.lines.join(". ");
     const poemText = `${title} ${poemLines}`;
     
-    // Get the user's preferred voice if available
     let voice = null;
     if (settings.preferredVoice) {
       voice = window.speechSynthesis.getVoices().find(
@@ -154,21 +160,14 @@ const LikedBooks = () => {
       ) || null;
     }
     
-    // Stop any ongoing speech
     speechService.stop();
-    
-    // Set the speaking poem ID
     const poemId = getUniqueId(poem, index);
     setSpeakingPoemId(poemId);
-    
-    // Speak the poem
     speechService.speak(poemText, voice);
-    
     toast.success("Reading poem aloud", {
       description: "Using " + (settings.preferredVoice?.name || "default voice")
     });
     
-    // Set up a periodic check for when speech ends
     const checkInterval = setInterval(() => {
       if (!window.speechSynthesis.speaking) {
         setSpeakingPoemId(null);
@@ -178,7 +177,7 @@ const LikedBooks = () => {
   };
 
   const stopReading = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent navigating to poem details
+    e.stopPropagation();
     speechService.stop();
     setSpeakingPoemId(null);
     toast.success("Stopped reading");
@@ -304,7 +303,6 @@ const LikedBooks = () => {
                       <PoemCard poem={poem} />
                     </div>
                     
-                    {/* Text-to-speech button */}
                     <div className="absolute top-4 right-16">
                       {isSpeaking ? (
                         <Button 
@@ -327,6 +325,18 @@ const LikedBooks = () => {
                         </Button>
                       )}
                     </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemovePoem(poem);
+                      }}
+                      className="absolute top-4 right-4 rounded-full bg-background/80 p-1
+                               opacity-0 hover:opacity-100 transition-opacity"
+                      aria-label="Remove from favorites"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
                   </div>
                 );
               })}
