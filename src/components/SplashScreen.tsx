@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Feather, Stars } from "lucide-react";
+import { BookOpen, Stars } from "lucide-react";
 
 const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [fadeOut, setFadeOut] = useState(false);
@@ -25,7 +25,7 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
         <div className="absolute top-[-10px] right-[-15px] text-primary/70 animate-float">
           <Stars size={24} />
         </div>
-        <Feather 
+        <BookOpen 
           size={64} 
           className="text-primary animate-pulse-soft mb-4" 
         />
@@ -34,8 +34,8 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
         </div>
       </div>
       
-      <h1 className="text-3xl font-serif font-bold gradient-text mb-3 animate-scale-in">Poetic Clouds</h1>
-      <p className="text-foreground/60 animate-fade-in-slow">Journey through words...</p>
+      <h1 className="text-3xl font-serif font-bold gradient-text mb-3 animate-scale-in">Book Reader</h1>
+      <p className="text-foreground/60 animate-fade-in-slow">Your digital library companion</p>
     </div>
   );
 };
