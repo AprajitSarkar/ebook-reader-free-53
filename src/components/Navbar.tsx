@@ -1,61 +1,49 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { Search, BookOpen, Heart, Settings } from "lucide-react";
-import { Capacitor } from '@capacitor/core';
+
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Home, Search, Heart, Settings, BookOpen } from "lucide-react";
 
 const Navbar = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [activeItem, setActiveItem] = useState("");
   
-  // Helper to check if a route is active
-  const isActive = (path: string) => location.pathname === path;
+  useEffect(() => {
+    const path = location.pathname.split("/")[1] || "poems";
+    setActiveItem(path);
+  }, [location]);
 
-  // We're not changing position for Android now, keeping it fixed above ad banner
-  const navbarPosition = "bottom-6"; // Same position for all platforms
+  const navItems = [
+    { name: "poems", icon: <Home className="w-5 h-5" />, label: "Poems" },
+    { name: "search", icon: <Search className="w-5 h-5" />, label: "Search" },
+    { name: "books", icon: <BookOpen className="w-5 h-5" />, label: "Books" },
+    { name: "liked-poems", icon: <Heart className="w-5 h-5" />, label: "Liked" },
+    { name: "settings", icon: <Settings className="w-5 h-5" />, label: "Settings" }
+  ];
+
+  const handleNavigation = (path: string) => {
+    navigate(`/${path}`);
+  };
 
   return (
-    <nav className={`fixed ${navbarPosition} w-full z-50 flex justify-center`}>
-      <div className="glass-card flex items-center justify-around px-6 py-4 gap-4 sm:gap-8 animate-fade-in">
-        <button 
-          onClick={() => navigate("/poems")}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/poems") ? "text-primary" : "text-foreground/80 hover:text-primary" 
-          }`}
-        >
-          <BookOpen size={20} />
-          <span className="text-xs">Poems</span>
-        </button>
-        
-        <button 
-          onClick={() => navigate("/search")}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/search") ? "text-primary" : "text-foreground/80 hover:text-primary" 
-          }`}
-        >
-          <Search size={20} />
-          <span className="text-xs">Search</span>
-        </button>
-        
-        <button 
-          onClick={() => navigate("/liked-poems")}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/liked-poems") ? "text-primary" : "text-foreground/80 hover:text-primary" 
-          }`}
-        >
-          <Heart size={20} fill={isActive("/liked-poems") ? "currentColor" : "none"} />
-          <span className="text-xs">Favorites</span>
-        </button>
-        
-        <button 
-          onClick={() => navigate("/settings")}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/settings") ? "text-primary" : "text-foreground/80 hover:text-primary" 
-          }`}
-        >
-          <Settings size={20} />
-          <span className="text-xs">Settings</span>
-        </button>
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-white/10 backdrop-blur-lg z-50">
+      <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
+        {navItems.map(item => (
+          <div 
+            key={item.name}
+            onClick={() => handleNavigation(item.name)}
+            className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-all ${
+              activeItem === item.name 
+                ? "text-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {item.icon}
+            <span className="text-xs mt-1">{item.label}</span>
+          </div>
+        ))}
       </div>
-    </nav>
+    </div>
   );
 };
 

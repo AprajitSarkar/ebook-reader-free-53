@@ -111,3 +111,52 @@
     transform: translateY(0);
   }
 }
+
+/* Prose styling for book content */
+.prose {
+  @apply text-foreground;
+}
+
+.prose p {
+  @apply my-4;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  @apply mt-8 mb-4 font-bold gradient-text;
+}
+
+.prose h1 {
+  @apply text-2xl;
+}
+
+.prose h2 {
+  @apply text-xl;
+}
+
+.prose h3 {
+  @apply text-lg;
+}
+
+.prose a {
+  @apply text-primary underline;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-primary/50 pl-4 italic my-4;
+}
+
+.prose ul, .prose ol {
+  @apply my-4 pl-5;
+}
+
+.prose li {
+  @apply my-1;
+}
+
+.prose code {
+  @apply bg-white/10 px-1 py-0.5 rounded;
+}
+
+.prose pre {
+  @apply bg-white/10 p-4 rounded-md overflow-x-auto my-4;
+}

@@ -17,6 +17,8 @@ import PoemDetails from "./pages/PoemDetails";
 import LikedPoems from "./pages/LikedPoems";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Books from "./pages/Books";
+import BookDetails from "./pages/BookDetails";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -111,6 +113,8 @@ const App = () => {
                     <Route path="/poem-details" element={<PoemDetails />} />
                     <Route path="/liked-poems" element={<LikedPoems />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/books" element={<Books />} />
+                    <Route path="/book-details" element={<BookDetails />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
