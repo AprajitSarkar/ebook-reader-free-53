@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { adService } from "@/services/adService";
@@ -50,7 +49,6 @@ const App = () => {
     setShowSplash(false);
   };
 
-  // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -62,9 +60,7 @@ const App = () => {
       setIsOnline(false);
       toast.warning("You're offline. Some features may be limited.");
       
-      // Only show the offline notice if the app is already loaded (past splash screen)
       if (!showSplash) {
-        // Add a small delay to prevent showing the notice on brief connection fluctuations
         setTimeout(() => {
           if (!navigator.onLine) {
             setShowOfflineNotice(true);
@@ -83,20 +79,16 @@ const App = () => {
   }, [showSplash]);
 
   useEffect(() => {
-    // Check for first time user
     const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
     if (!hasVisitedBefore && !window.location.pathname.includes("privacy")) {
       setShowFirstTimeModal(true);
     }
     
-    // Force dark mode
     document.documentElement.classList.add('dark');
     
-    // Show app is loaded
     setIsLoaded(true);
     console.log("App component mounted");
     
-    // Initialize AdMob if on Android
     const initAds = async () => {
       if (Capacitor.getPlatform() === 'android') {
         try {
@@ -115,14 +107,12 @@ const App = () => {
     }
     
     return () => {
-      // Clean up ads when component unmounts
       if (Capacitor.getPlatform() === 'android') {
         adService.removeBanner().catch(console.error);
       }
     };
   }, [showSplash]);
 
-  // Special case for privacy policy - no splash screen
   useEffect(() => {
     if (window.location.pathname.includes("privacy") || window.location.pathname.includes("terms")) {
       setShowSplash(false);
@@ -136,7 +126,6 @@ const App = () => {
   const handleOfflineRetry = () => {
     if (navigator.onLine) {
       setShowOfflineNotice(false);
-      // Force refresh data
       queryClient.invalidateQueries();
     }
   };
@@ -150,39 +139,37 @@ const App = () => {
           {showSplash && !window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
             <SplashScreen onComplete={hideSplash} />
           )}
-          <BrowserRouter>
-            {!showSplash && (
-              <>
-                {showOfflineNotice ? (
-                  <div className="h-screen">
-                    <OfflineNotice onRetry={handleOfflineRetry} />
+          {!showSplash && (
+            <>
+              {showOfflineNotice ? (
+                <div className="h-screen">
+                  <OfflineNotice onRetry={handleOfflineRetry} />
+                </div>
+              ) : (
+                <>
+                  <div className="pb-24">
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/books" replace />} />
+                      <Route path="/poems" element={<Poems />} />
+                      <Route path="/search" element={<Search />} />
+                      <Route path="/poem-details" element={<PoemDetails />} />
+                      <Route path="/liked-poems" element={<LikedPoems />} />
+                      <Route path="/liked-books" element={<LikedBooks />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/books" element={<Books />} />
+                      <Route path="/book-details" element={<BookDetails />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/terms" element={<TermsConditions />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </div>
-                ) : (
-                  <>
-                    <div className="pb-24">
-                      <Routes>
-                        <Route path="/" element={<Navigate to="/books" replace />} />
-                        <Route path="/poems" element={<Poems />} />
-                        <Route path="/search" element={<Search />} />
-                        <Route path="/poem-details" element={<PoemDetails />} />
-                        <Route path="/liked-poems" element={<LikedPoems />} />
-                        <Route path="/liked-books" element={<LikedBooks />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/books" element={<Books />} />
-                        <Route path="/book-details" element={<BookDetails />} />
-                        <Route path="/privacy" element={<PrivacyPolicy />} />
-                        <Route path="/terms" element={<TermsConditions />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </div>
-                    {!window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
-                      <Navbar />
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </BrowserRouter>
+                  {!window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
+                    <Navbar />
+                  )}
+                </>
+              )}
+            </>
+          )}
           
           {showFirstTimeModal && (
             <FirstTimeModal 

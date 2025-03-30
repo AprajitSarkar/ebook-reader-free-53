@@ -1,6 +1,6 @@
 
 import { Capacitor } from '@capacitor/core';
-import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition, AdMobBannerSize, AdOptions } from '@capacitor-community/admob';
+import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
 
 const APP_ID = {
   android: 'ca-app-pub-3279473081670891~9908825517',
@@ -28,9 +28,9 @@ export const adService: AdMobService = {
   initialize: async () => {
     if (Capacitor.isNativePlatform()) {
       try {
-        // Initialize AdMob with the app ID
+        // Initialize AdMob with the app ID - fix the options to match the correct interface
         await AdMob.initialize({
-          requestTrackingAuthorization: true,
+          // Remove requestTrackingAuthorization as it's not in the interface
           initializeForTesting: false,
           testingDevices: [],
         });
