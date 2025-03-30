@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Book } from "@/services/gutendexService";
 import { Poem } from "@/services/poetryService";
@@ -217,7 +218,7 @@ const LikedBooks = () => {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="books" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
@@ -228,122 +229,122 @@ const LikedBooks = () => {
               Poems
             </TabsTrigger>
           </TabsList>
+        
+          <TabsContent value="books" className="mt-4">
+            {filteredBooks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[50vh] text-center">
+                <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-medium mb-2">No favorite books yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery ? "No books match your search" : "Your saved books will appear here"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => navigate('/books')}>
+                    Browse Books
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-230px)]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredBooks.map((book) => (
+                    <div key={book.id} className="relative group">
+                      <BookCard 
+                        book={book} 
+                        onClick={() => handleViewBook(book.id)} 
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveBook(book.id);
+                        }}
+                        className="absolute top-2 right-2 rounded-full bg-background/80 p-1
+                                 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove from favorites"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+
+          <TabsContent value="poems" className="mt-4">
+            {filteredPoems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[50vh] text-center">
+                <BookText className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-medium mb-2">No favorite poems yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery ? "No poems match your search" : "Your saved poems will appear here"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => navigate('/poems')}>
+                    Browse Poems
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-230px)]">
+                <div className="space-y-6">
+                  {filteredPoems.map((poem, index) => {
+                    const poemId = getUniqueId(poem, index);
+                    const isSpeaking = speakingPoemId === poemId;
+                    
+                    return (
+                      <div 
+                        key={poemId} 
+                        className="cursor-pointer animate-fade-in relative"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <div onClick={() => viewPoemDetails(poem)}>
+                          <PoemCard poem={poem} />
+                        </div>
+                        
+                        <div className="absolute top-4 right-16">
+                          {isSpeaking ? (
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={(e) => stopReading(e)} 
+                              className="flex items-center gap-1"
+                            >
+                              <span>Stop</span>
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={(e) => readPoem(poem, index, e)} 
+                              className="flex items-center gap-1"
+                            >
+                              <Volume2 size={16} />
+                              <span>Read</span>
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemovePoem(poem);
+                          }}
+                          className="absolute top-4 right-4 rounded-full bg-background/80 p-1
+                                   opacity-0 hover:opacity-100 transition-opacity"
+                          aria-label="Remove from favorites"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
-
-      <TabsContent value="books" className="mt-4">
-        {filteredBooks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-center">
-            <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No favorite books yet</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? "No books match your search" : "Your saved books will appear here"}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => navigate('/books')}>
-                Browse Books
-              </Button>
-            )}
-          </div>
-        ) : (
-          <ScrollArea className="h-[calc(100vh-230px)]">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {filteredBooks.map((book) => (
-                <div key={book.id} className="relative group">
-                  <BookCard 
-                    book={book} 
-                    onClick={() => handleViewBook(book.id)} 
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveBook(book.id);
-                    }}
-                    className="absolute top-2 right-2 rounded-full bg-background/80 p-1
-                             opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Remove from favorites"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </TabsContent>
-
-      <TabsContent value="poems" className="mt-4">
-        {filteredPoems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-center">
-            <BookText className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No favorite poems yet</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? "No poems match your search" : "Your saved poems will appear here"}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => navigate('/poems')}>
-                Browse Poems
-              </Button>
-            )}
-          </div>
-        ) : (
-          <ScrollArea className="h-[calc(100vh-230px)]">
-            <div className="space-y-6">
-              {filteredPoems.map((poem, index) => {
-                const poemId = getUniqueId(poem, index);
-                const isSpeaking = speakingPoemId === poemId;
-                
-                return (
-                  <div 
-                    key={poemId} 
-                    className="cursor-pointer animate-fade-in relative"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div onClick={() => viewPoemDetails(poem)}>
-                      <PoemCard poem={poem} />
-                    </div>
-                    
-                    <div className="absolute top-4 right-16">
-                      {isSpeaking ? (
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={(e) => stopReading(e)} 
-                          className="flex items-center gap-1"
-                        >
-                          <span>Stop</span>
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={(e) => readPoem(poem, index, e)} 
-                          className="flex items-center gap-1"
-                        >
-                          <Volume2 size={16} />
-                          <span>Read</span>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemovePoem(poem);
-                      }}
-                      className="absolute top-4 right-4 rounded-full bg-background/80 p-1
-                               opacity-0 hover:opacity-100 transition-opacity"
-                      aria-label="Remove from favorites"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
-      </TabsContent>
 
       <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
         <AlertDialogContent>
