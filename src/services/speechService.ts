@@ -4,6 +4,11 @@ export interface VoiceOption {
   name: string;
   gender: string;
   isOnlineOnly: boolean;
+  // Add missing SpeechSynthesisVoice properties
+  voiceURI: string;
+  lang: string;
+  localService: boolean;
+  default: boolean;
 }
 
 export const speechService = {
@@ -62,7 +67,12 @@ export const speechService = {
       id: voice.voiceURI,
       name: voice.name,
       gender: voice.name.toLowerCase().includes("female") ? "female" : "male",
-      isOnlineOnly: !voice.localService
+      isOnlineOnly: !voice.localService,
+      // Add missing SpeechSynthesisVoice properties
+      voiceURI: voice.voiceURI,
+      lang: voice.lang,
+      localService: voice.localService,
+      default: voice.default
     }));
   },
   

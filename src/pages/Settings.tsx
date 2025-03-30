@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Volume2, Moon, InfoCircle, BookOpen, Shield, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Volume2, Moon, Info, BookOpen, Shield, FileText, ExternalLink } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { VoiceOption, speechService } from "@/services/speechService";
 import { toast } from "@/lib/toast";
@@ -143,7 +142,7 @@ const Settings = () => {
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <InfoCircle className="h-5 w-5 text-primary" />
+              <Info className="h-5 w-5 text-primary" />
               About
             </CardTitle>
             <CardDescription>
