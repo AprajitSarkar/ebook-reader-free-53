@@ -105,7 +105,13 @@ const LikedPoems = () => {
             Your Favorite Poems
           </h1>
           
-          <div className="w-8"></div> {/* Empty div for centering */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/liked-books')}
+          >
+            View Books
+          </Button>
         </div>
       </div>
 

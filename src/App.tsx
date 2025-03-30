@@ -19,11 +19,15 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Books from "./pages/Books";
 import BookDetails from "./pages/BookDetails";
+import LikedBooks from "./pages/LikedBooks";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsConditions from "./pages/TermsConditions";
 
 // Components
 import Navbar from "./components/Navbar";
 import SplashScreen from "./components/SplashScreen";
 import OfflineNotice from "./components/OfflineNotice";
+import FirstTimeModal from "./components/FirstTimeModal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +43,7 @@ const App = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showOfflineNotice, setShowOfflineNotice] = useState(false);
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
 
   const hideSplash = () => {
     console.log("Splash screen completed, showing main app");
@@ -78,6 +83,12 @@ const App = () => {
   }, [showSplash]);
 
   useEffect(() => {
+    // Check for first time user
+    const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+    if (!hasVisitedBefore && !window.location.pathname.includes("privacy")) {
+      setShowFirstTimeModal(true);
+    }
+    
     // Force dark mode
     document.documentElement.classList.add('dark');
     
@@ -111,6 +122,13 @@ const App = () => {
     };
   }, [showSplash]);
 
+  // Special case for privacy policy - no splash screen
+  useEffect(() => {
+    if (window.location.pathname.includes("privacy") || window.location.pathname.includes("terms")) {
+      setShowSplash(false);
+    }
+  }, []);
+
   if (!isLoaded) {
     return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading...</div>;
   }
@@ -129,7 +147,9 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {showSplash && <SplashScreen onComplete={hideSplash} />}
+          {showSplash && !window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
+            <SplashScreen onComplete={hideSplash} />
+          )}
           <BrowserRouter>
             {!showSplash && (
               <>
@@ -146,18 +166,33 @@ const App = () => {
                         <Route path="/search" element={<Search />} />
                         <Route path="/poem-details" element={<PoemDetails />} />
                         <Route path="/liked-poems" element={<LikedPoems />} />
+                        <Route path="/liked-books" element={<LikedBooks />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/books" element={<Books />} />
                         <Route path="/book-details" element={<BookDetails />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsConditions />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </div>
-                    <Navbar />
+                    {!window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
+                      <Navbar />
+                    )}
                   </>
                 )}
               </>
             )}
           </BrowserRouter>
+          
+          {showFirstTimeModal && (
+            <FirstTimeModal 
+              onAccept={() => {
+                localStorage.setItem("hasVisitedBefore", "true");
+                setShowFirstTimeModal(false);
+              }}
+              onClose={() => setShowFirstTimeModal(false)}
+            />
+          )}
         </TooltipProvider>
       </UserSettingsProvider>
     </QueryClientProvider>

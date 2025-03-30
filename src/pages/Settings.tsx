@@ -1,253 +1,257 @@
 
-import React, { useEffect, useState } from "react";
-import { useUserSettings } from "@/contexts/UserSettingsContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Volume2, Moon, InfoCircle, BookOpen, Shield, FileText, ExternalLink } from "lucide-react";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
+import { VoiceOption, speechService } from "@/services/speechService";
 import { toast } from "@/lib/toast";
-import { Clock, Moon, BookText, Volume2, Brush, Laptop, CloudCog, Clock3 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const Settings = () => {
-  const { settings, updateSettings } = useUserSettings();
+  const navigate = useNavigate();
+  const { settings, updateVoice, toggleOfflineMode } = useUserSettings();
+  const [allVoices, setAllVoices] = useState<VoiceOption[]>(speechService.getVoices());
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
 
-  const handleVoiceChange = (voice: string) => {
-    updateSettings({ preferredVoice: voice });
-    toast.success("Voice preference updated");
+  const handleVoiceChange = (voiceId: string) => {
+    const selectedVoice = allVoices.find(voice => voice.id === voiceId) || null;
+    updateVoice(selectedVoice);
+    toast.success(`Voice updated to ${selectedVoice?.name || "Default"}`);
   };
 
-  // Get available voices for speech synthesis
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  
-  useEffect(() => {
-    const loadVoices = () => {
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        const availableVoices = window.speechSynthesis.getVoices();
-        if (availableVoices.length > 0) {
-          setVoices(availableVoices);
-        }
-      }
-    };
-    
-    loadVoices();
-    
-    // Chrome loads voices asynchronously
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
+  const handleOfflineToggle = (enabled: boolean) => {
+    toggleOfflineMode(enabled);
+    toast.success(`Offline mode ${enabled ? "enabled" : "disabled"}`);
+  };
+
+  const clearAllUserData = () => {
+    try {
+      // Clear all local storage data
+      localStorage.removeItem("likedPoems");
+      localStorage.removeItem("likedBooks");
+      localStorage.removeItem("searchHistory");
+      
+      toast.success("All user data cleared successfully");
+      setShowClearDataDialog(false);
+    } catch (error) {
+      console.error("Error clearing user data:", error);
+      toast.error("Failed to clear user data");
     }
-    
-    return () => {
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-    };
-  }, []);
-  
-  const handleClearCache = () => {
-    // This would clear all cached books and poems
-    localStorage.removeItem("cached_books");
-    localStorage.removeItem("cached_books_timestamp");
-    // Add other cache clearing logic here
-    toast.success("Cache cleared successfully");
   };
 
+  // Group voices by provider for better organization
+  const googleVoices = allVoices.filter(voice => voice.name.includes("Google"));
+  const otherVoices = allVoices.filter(voice => !voice.name.includes("Google"));
+  
   return (
-    <div className="container max-w-2xl mx-auto p-4 pb-28">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <div className="container max-w-3xl mx-auto px-4 py-5 pb-28">
+      <div className="sticky top-0 z-10 bg-background pt-2 pb-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold gradient-text">Settings</h1>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+      </div>
       
       <div className="space-y-6">
-        {/* Display Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brush className="h-5 w-5 text-primary" />
-              Display
-            </CardTitle>
-            <CardDescription>Customize your reading experience</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="dark-mode">Dark Mode</Label>
-                <p className="text-sm text-muted-foreground">Always use dark theme</p>
-              </div>
-              <Switch id="dark-mode" checked disabled />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="font-size">Font Size</Label>
-              <div className="flex items-center gap-4">
-                <span className="text-sm">A</span>
-                <Slider
-                  id="font-size"
-                  min={80}
-                  max={120}
-                  step={10}
-                  defaultValue={[100]}
-                  className="flex-1"
-                />
-                <span className="text-lg">A</span>
-              </div>
-              <div className="flex justify-end">
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Reading Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookText className="h-5 w-5 text-primary" />
-              Reading
-            </CardTitle>
-            <CardDescription>Adjust your reading preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="auto-scroll">Auto-scroll</Label>
-                <p className="text-sm text-muted-foreground">Automatically scroll when reading</p>
-              </div>
-              <div className="flex items-center">
-                <Switch id="auto-scroll" disabled />
-                <Badge variant="outline" className="ml-2">Coming Soon</Badge>
-              </div>
-            </div>
-            <div className="space-y-0.5">
-              <Label htmlFor="reading-speed">Reading Speed</Label>
-              <div className="flex items-center gap-4">
-                <Clock3 className="h-4 w-4 text-muted-foreground" />
-                <Slider
-                  id="reading-speed"
-                  min={1}
-                  max={5}
-                  step={1}
-                  defaultValue={[3]}
-                  disabled
-                  className="flex-1"
-                />
-                <Clock className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="flex justify-end">
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Voice Settings */}
-        <Card>
+        {/* Text-to-Speech Settings */}
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="h-5 w-5 text-primary" />
-              Voice
+              Voice Settings
             </CardTitle>
-            <CardDescription>Text-to-speech settings</CardDescription>
+            <CardDescription>
+              Configure text-to-speech preferences
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="voice-select">Voice</Label>
-              <Select
-                value={settings.preferredVoice} 
+            <div className="grid gap-2">
+              <Label htmlFor="voice-selection">Voice Selection</Label>
+              <Select 
+                value={settings.preferredVoice?.id || "default"} 
                 onValueChange={handleVoiceChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select voice" />
+                  <SelectValue placeholder="Select a voice" />
                 </SelectTrigger>
                 <SelectContent>
-                  {voices.length > 0 ? (
-                    voices.map((voice) => (
-                      <SelectItem key={voice.name} value={voice.name}>
-                        {voice.name} {voice.lang && `(${voice.lang})`}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="default">Default Voice</SelectItem>
+                  <SelectItem value="default">System Default</SelectItem>
+                  
+                  {googleVoices.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="px-2 py-1 text-xs text-muted-foreground">Google Voices</div>
+                      {googleVoices.map(voice => (
+                        <SelectItem 
+                          key={voice.id} 
+                          value={voice.id}
+                        >
+                          {voice.name} ({voice.gender === "female" ? "F" : "M"})
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  
+                  {otherVoices.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="px-2 py-1 text-xs text-muted-foreground">Other Voices</div>
+                      {otherVoices.map(voice => (
+                        <SelectItem 
+                          key={voice.id} 
+                          value={voice.id}
+                        >
+                          {voice.name} ({voice.gender === "female" ? "F" : "M"})
+                        </SelectItem>
+                      ))}
+                    </>
                   )}
                 </SelectContent>
               </Select>
+              
+              <div className="text-xs text-muted-foreground mt-1">
+                Selected: {settings.preferredVoice?.name || "System Default"}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="voice-speed">Voice Speed</Label>
-              <div className="flex items-center gap-4">
-                <span className="text-sm">Slow</span>
-                <Slider
-                  id="voice-speed"
-                  min={0.5}
-                  max={2}
-                  step={0.1}
-                  defaultValue={[1]}
-                  disabled
-                  className="flex-1"
-                />
-                <span className="text-sm">Fast</span>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="offline-mode" className="block mb-1">Offline Voice Mode</Label>
+                <span className="text-xs text-muted-foreground">
+                  Use device voices that work offline
+                </span>
               </div>
-              <div className="flex justify-end">
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
+              <Switch 
+                id="offline-mode" 
+                checked={settings.useOfflineVoice}
+                onCheckedChange={handleOfflineToggle}
+              />
             </div>
           </CardContent>
         </Card>
         
-        {/* Data & Storage */}
-        <Card>
+        {/* App Information */}
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CloudCog className="h-5 w-5 text-primary" />
-              Data & Storage
-            </CardTitle>
-            <CardDescription>Manage your app data</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Offline Access</Label>
-                <p className="text-sm text-muted-foreground">Cache books for offline reading</p>
-              </div>
-              <Switch checked disabled />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Clear Cache</Label>
-                <p className="text-sm text-muted-foreground">Remove all cached content</p>
-              </div>
-              <Button variant="destructive" size="sm" onClick={handleClearCache}>
-                Clear
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* About Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Laptop className="h-5 w-5 text-primary" />
+              <InfoCircle className="h-5 w-5 text-primary" />
               About
             </CardTitle>
+            <CardDescription>
+              App information and legal documents
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span>App Version</span>
-              <span className="text-muted-foreground">1.0.0</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Build</span>
-              <span className="text-muted-foreground">{new Date().toISOString().split('T')[0]}</span>
+          <CardContent className="space-y-4">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate("/privacy")}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Privacy Policy
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate("/terms")}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Terms & Conditions
+            </Button>
+
+            <div className="pt-2">
+              <h4 className="text-sm font-medium mb-2">API Credits</h4>
+              <div className="space-y-2 text-sm">
+                <p className="flex items-center gap-1 text-xs">
+                  <BookOpen className="h-3 w-3" />
+                  Books provided by:
+                  <a 
+                    href="https://gutendex.com/" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-primary flex items-center"
+                  >
+                    Gutendex API
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </p>
+                <p className="flex items-center gap-1 text-xs">
+                  <FileText className="h-3 w-3" />
+                  Poems provided by:
+                  <a 
+                    href="https://poetrydb.org/" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-primary flex items-center"
+                  >
+                    PoetryDB
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </p>
+              </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full" disabled>
-              Check for Updates
-              <Badge variant="outline" className="ml-2">Coming Soon</Badge>
-            </Button>
-          </CardFooter>
         </Card>
+
+        {/* User Data */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Moon className="h-5 w-5" />
+              User Data
+            </CardTitle>
+            <CardDescription>
+              Manage your saved data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full"
+              onClick={() => setShowClearDataDialog(true)}
+            >
+              Clear All User Data
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              This will remove all your liked poems, books, and search history.
+            </p>
+          </CardContent>
+        </Card>
+        
+        <div className="text-center text-xs text-muted-foreground py-6">
+          <p>eBook Library</p>
+          <p>Version 1.0.0</p>
+          <p>© 2024 Aprajit Sarkar</p>
+        </div>
       </div>
+
+      <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear user data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all your saved books, poems, and search history.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={clearAllUserData}>
+              Clear Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

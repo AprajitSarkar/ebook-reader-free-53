@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, Search, Heart, Settings, Home } from "lucide-react";
+import { BookOpen, Search, Heart, Settings, Home, BookmarkCheck } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -17,7 +17,7 @@ const Navbar = () => {
     { name: "books", icon: <BookOpen className="w-5 h-5" />, label: "Books" },
     { name: "poems", icon: <Home className="w-5 h-5" />, label: "Poems" },
     { name: "search", icon: <Search className="w-5 h-5" />, label: "Search" },
-    { name: "liked-poems", icon: <Heart className="w-5 h-5" />, label: "Liked" },
+    { name: "liked-books", icon: <BookmarkCheck className="w-5 h-5" />, label: "Saved" },
     { name: "settings", icon: <Settings className="w-5 h-5" />, label: "Settings" }
   ];
 

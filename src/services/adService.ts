@@ -1,35 +1,50 @@
 
-import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
-export const adService = {
-  initialize: async (): Promise<void> => {
-    await AdMob.initialize({
-      testingDevices: [],
-      initializeForTesting: false
-    });
+// This is a placeholder service for AdMob functionality
+// In a real implementation, you would import and use the AdMob Capacitor plugin
+
+interface AdMobService {
+  initialize: () => Promise<void>;
+  showBanner: () => Promise<void>;
+  removeBanner: () => Promise<void>;
+  showInterstitial: () => Promise<void>;
+}
+
+export const adService: AdMobService = {
+  initialize: async () => {
+    if (Capacitor.isNativePlatform()) {
+      console.log("AdMob initialized");
+      // In a real app, you would initialize the AdMob plugin here
+      return Promise.resolve();
+    }
+    return Promise.resolve();
   },
 
-  showBanner: async (): Promise<void> => {
-    const options: BannerAdOptions = {
-      adId: 'ca-app-pub-3279473081670891/1003101920',
-      adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 0, // Removed margin so banner sits directly at bottom
-      isTesting: false
-    };
-
-    await AdMob.showBanner(options);
+  showBanner: async () => {
+    if (Capacitor.isNativePlatform()) {
+      console.log("AdMob banner shown");
+      // In a real app, you would show the banner ad here
+      return Promise.resolve();
+    }
+    return Promise.resolve();
   },
 
-  hideBanner: async (): Promise<void> => {
-    await AdMob.hideBanner();
+  removeBanner: async () => {
+    if (Capacitor.isNativePlatform()) {
+      console.log("AdMob banner removed");
+      // In a real app, you would remove the banner ad here
+      return Promise.resolve();
+    }
+    return Promise.resolve();
   },
 
-  resumeBanner: async (): Promise<void> => {
-    await AdMob.resumeBanner();
+  showInterstitial: async () => {
+    if (Capacitor.isNativePlatform()) {
+      console.log("AdMob interstitial shown");
+      // In a real app, you would show the interstitial ad here
+      return Promise.resolve();
+    }
+    return Promise.resolve();
   },
-
-  removeBanner: async (): Promise<void> => {
-    await AdMob.removeBanner();
-  }
 };
