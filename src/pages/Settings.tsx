@@ -1,296 +1,175 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Volume2, Moon, Info, BookOpen, Shield, FileText, ExternalLink, Play } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
-import { VoiceOption, speechService } from "@/services/speechService";
+import { speechService, VoiceOption } from "@/services/speechService";
 import { toast } from "@/lib/toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, Volume2, Github, Info, ExternalLink, Moon, Sun } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { settings, updateVoice, toggleOfflineMode, testVoice } = useUserSettings();
-  const [allVoices, setAllVoices] = useState<VoiceOption[]>(speechService.getVoices());
-  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
-
+  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  
   useEffect(() => {
-    const checkForVoices = () => {
-      const voices = speechService.getVoices();
-      if (voices.length > allVoices.length) {
-        console.log(`Voice count changed from ${allVoices.length} to ${voices.length}`);
-        setAllVoices(voices);
+    // Set mounted to true to prevent hydration issues
+    setMounted(true);
+    
+    // Load voice options
+    setTimeout(() => {
+      try {
+        const voices = speechService.getVoices();
+        setVoiceOptions(voices);
+      } catch (error) {
+        console.error("Error loading voices:", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
-    
-    const intervalId = setInterval(checkForVoices, 1000);
-    
-    if (/Android/i.test(navigator.userAgent)) {
-      const dummyUtterance = new SpeechSynthesisUtterance("");
-      window.speechSynthesis.speak(dummyUtterance);
-      window.speechSynthesis.cancel();
-      
-      setTimeout(checkForVoices, 500);
-    }
-    
-    return () => clearInterval(intervalId);
-  }, [allVoices.length]);
+    }, 500);
+  }, []);
 
-  const handleVoiceChange = (voiceId: string) => {
-    if (voiceId === "default") {
+  const handleVoiceChange = (value: string) => {
+    if (value === "default") {
       updateVoice(null);
-      toast.success("Voice updated to System Default");
     } else {
-      const selectedVoice = allVoices.find(voice => voice.id === voiceId) || null;
+      const selectedVoice = voiceOptions.find(voice => voice.id === value) || null;
       updateVoice(selectedVoice);
-      toast.success(`Voice updated to ${selectedVoice?.name || "Default"}`);
     }
   };
 
-  const handleOfflineToggle = (enabled: boolean) => {
-    toggleOfflineMode(enabled);
-    toast.success(`Offline mode ${enabled ? "enabled" : "disabled"}`);
-  };
-
-  const handleTestVoice = () => {
-    testVoice();
-    toast.info("Testing voice...");
-  };
-
-  const clearAllUserData = () => {
-    try {
-      localStorage.removeItem("likedPoems");
-      localStorage.removeItem("likedBooks");
-      localStorage.removeItem("searchHistory");
-      
-      toast.success("All user data cleared successfully");
-      setShowClearDataDialog(false);
-    } catch (error) {
-      console.error("Error clearing user data:", error);
-      toast.error("Failed to clear user data");
+  const handleOfflineToggle = (checked: boolean) => {
+    toggleOfflineMode(checked);
+    
+    if (checked) {
+      toast.info("Using offline voices only");
+    } else {
+      toast.info("Using all available voices");
     }
   };
 
-  const googleVoices = allVoices.filter(voice => voice.name.includes("Google"));
-  const otherVoices = allVoices.filter(voice => !voice.name.includes("Google"));
-  
-  const onlineVoices = allVoices.filter(voice => voice.isOnlineOnly);
-  const offlineVoices = allVoices.filter(voice => !voice.isOnlineOnly);
-  
+  // Only render the component after mounting to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="container max-w-3xl mx-auto px-4 py-5 pb-28">
-      <div className="sticky top-0 z-10 bg-background pt-2 pb-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold gradient-text">Settings</h1>
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
+            <ChevronLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
+          <h1 className="text-2xl font-bold gradient-text">Settings</h1>
         </div>
       </div>
-      
-      <div className="space-y-6">
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Volume2 className="h-5 w-5 text-primary" />
-              Voice Settings
-            </CardTitle>
-            <CardDescription>
-              Configure text-to-speech preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="voice-selection">Voice Selection</Label>
-              <Select 
-                value={settings.preferredVoice?.id || "default"} 
-                onValueChange={handleVoiceChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a voice" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">System Default</SelectItem>
-                  
-                  {offlineVoices.length > 0 && (
-                    <>
-                      <Separator className="my-1" />
-                      <div className="px-2 py-1 text-xs text-muted-foreground">Offline Voices</div>
-                      {offlineVoices.map(voice => (
-                        <SelectItem 
-                          key={voice.id} 
-                          value={voice.id}
-                        >
-                          {voice.name} ({voice.gender === "female" ? "F" : "M"})
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-                  
-                  {onlineVoices.length > 0 && (
-                    <>
-                      <Separator className="my-1" />
-                      <div className="px-2 py-1 text-xs text-muted-foreground">Online Voices</div>
-                      {onlineVoices.map(voice => (
-                        <SelectItem 
-                          key={voice.id} 
-                          value={voice.id}
-                        >
-                          {voice.name} ({voice.gender === "female" ? "F" : "M"})
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-              
-              <div className="text-xs text-muted-foreground mt-1">
-                Selected: {settings.preferredVoice?.name || "System Default"}
+
+      <ScrollArea className="h-[calc(100vh-180px)]">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Volume2 className="mr-2 h-5 w-5" />
+                Text-to-Speech Settings
+              </CardTitle>
+              <CardDescription>
+                Configure the voice used for reading text aloud
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-sm font-medium">Voice Selection</label>
+                <Select
+                  disabled={isLoading}
+                  onValueChange={handleVoiceChange}
+                  value={settings.preferredVoice?.id || "default"}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={isLoading ? "Loading voices..." : "Select voice"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">System Default</SelectItem>
+                    {voiceOptions.map((voice) => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.name} ({voice.gender})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2"
-                onClick={handleTestVoice}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Test Voice
-              </Button>
-            </div>
-            
-            <div className="flex items-center justify-between">
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label className="text-sm font-medium">Use Offline Voices Only</label>
+                  <p className="text-xs text-muted-foreground">
+                    Only show voices available offline
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.useOfflineVoice}
+                  onCheckedChange={handleOfflineToggle}
+                />
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={testVoice}
+                  className="w-full"
+                >
+                  <Volume2 className="mr-2 h-4 w-4" />
+                  Test Voice
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Info className="mr-2 h-5 w-5" />
+                About
+              </CardTitle>
+              <CardDescription>
+                Book Reader App Information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="offline-mode" className="block mb-1">Offline Voice Mode</Label>
-                <span className="text-xs text-muted-foreground">
-                  Use device voices that work offline
-                </span>
+                <p className="text-sm">Version: 1.0.0</p>
+                <p className="text-sm">Developed with ❤️ by Lovable AI</p>
               </div>
-              <Switch 
-                id="offline-mode" 
-                checked={settings.useOfflineVoice}
-                onCheckedChange={handleOfflineToggle}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-primary" />
-              About
-            </CardTitle>
-            <CardDescription>
-              App information and legal documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              onClick={() => navigate("/privacy")}
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Privacy Policy
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              onClick={() => navigate("/terms")}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Terms & Conditions
-            </Button>
-
-            <div className="pt-2">
-              <h4 className="text-sm font-medium mb-2">API Credits</h4>
-              <div className="space-y-2 text-sm">
-                <p className="flex items-center gap-1 text-xs">
-                  <BookOpen className="h-3 w-3" />
-                  Books provided by:
-                  <a 
-                    href="https://gutendex.com/" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-primary flex items-center"
-                  >
-                    Gutendex API
-                    <ExternalLink className="h-3 w-3 ml-1" />
+              
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href="https://github.com/lovable-ai/book-reader" target="_blank" rel="noopener noreferrer">
+                    <Github className="mr-2 h-4 w-4" />
+                    Source Code
                   </a>
-                </p>
-                <p className="flex items-center gap-1 text-xs">
-                  <FileText className="h-3 w-3" />
-                  Poems provided by:
-                  <a 
-                    href="https://poetrydb.org/" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-primary flex items-center"
-                  >
-                    PoetryDB
-                    <ExternalLink className="h-3 w-3 ml-1" />
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Privacy Policy
                   </a>
-                </p>
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <Moon className="h-5 w-5" />
-              User Data
-            </CardTitle>
-            <CardDescription>
-              Manage your saved data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="destructive" 
-              className="w-full"
-              onClick={() => setShowClearDataDialog(true)}
-            >
-              Clear All User Data
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              This will remove all your liked poems, books, and search history.
-            </p>
-          </CardContent>
-        </Card>
-        
-        <div className="text-center text-xs text-muted-foreground py-6">
-          <p>eBook Library</p>
-          <p>Version 1.0.0</p>
-          <p>© 2024 Aprajit Sarkar</p>
+            </CardContent>
+            <CardFooter className="text-xs text-muted-foreground">
+              All books are provided by Project Gutenberg. Book Reader respects copyright laws.
+            </CardFooter>
+          </Card>
         </div>
-      </div>
-
-      <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear user data?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove all your saved books, poems, and search history.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={clearAllUserData}>
-              Clear Data
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </ScrollArea>
     </div>
   );
 };

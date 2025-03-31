@@ -95,6 +95,46 @@ const App = () => {
     };
   }, [showSplash]);
 
+  // Add app pause/resume event listeners for App Open ads
+  useEffect(() => {
+    const setupAppLifecycleListeners = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { App } = await import('@capacitor/app');
+          
+          // Show app open ad when app resumes
+          App.addListener('appStateChange', ({ isActive }) => {
+            if (isActive && adsInitialized) {
+              console.log('App resumed, showing App Open ad');
+              adService.showAppOpenAd().catch(console.error);
+            }
+          });
+          
+          console.log('App lifecycle listeners set up');
+        } catch (error) {
+          console.error('Error setting up app lifecycle listeners:', error);
+        }
+      }
+    };
+    
+    setupAppLifecycleListeners();
+    
+    return () => {
+      const cleanupListeners = async () => {
+        if (Capacitor.isNativePlatform()) {
+          try {
+            const { App } = await import('@capacitor/app');
+            await App.removeAllListeners();
+          } catch (error) {
+            console.error('Error removing app listeners:', error);
+          }
+        }
+      };
+      
+      cleanupListeners();
+    };
+  }, [adsInitialized]);
+
   useEffect(() => {
     const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
     if (!hasVisitedBefore && !window.location.pathname.includes("privacy")) {
@@ -114,6 +154,8 @@ const App = () => {
           setAdsInitialized(true);
           // Show banner ad after initialization
           await adService.showBanner();
+          // Preload app open ad
+          await adService.preloadAppOpenAd();
           console.log("Ads initialized successfully");
         } catch (error) {
           console.error('Error initializing ads:', error);
