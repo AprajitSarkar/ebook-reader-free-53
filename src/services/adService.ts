@@ -50,18 +50,18 @@ export const adService: AdMobService = {
       try {
         const platform = Capacitor.getPlatform();
         
-        // Configure banner options - Set position to TOP_CENTER to appear above the navbar
+        // Configure banner options - Position adjusted to appear above the navbar
         const options: BannerAdOptions = {
           adId: platform === 'android' ? BANNER_ID.android : BANNER_ID.ios,
           adSize: BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER, // Changed to BOTTOM_CENTER
-          margin: 60, // Add margin to position above the navbar
+          position: BannerAdPosition.BOTTOM_CENTER,
+          margin: 56, // Increased margin to position well above the navbar (16px navbar + 40px for safety)
           isTesting: false // Set to true for testing
         };
         
         // Show the banner
         await AdMob.showBanner(options);
-        console.log("AdMob banner shown above navbar");
+        console.log("AdMob banner shown above navbar with margin:", options.margin);
         return Promise.resolve();
       } catch (error) {
         console.error("Error showing banner ad:", error);

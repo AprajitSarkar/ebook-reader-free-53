@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Check } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FirstTimeModalProps {
   onAccept: () => void;
@@ -16,6 +17,10 @@ const FirstTimeModal = ({ onAccept, onClose }: FirstTimeModalProps) => {
   const handleAccept = () => {
     setAccepted(true);
     onAccept();
+  };
+
+  const toggleAccepted = () => {
+    setAccepted(!accepted);
   };
 
   return (
@@ -38,16 +43,20 @@ const FirstTimeModal = ({ onAccept, onClose }: FirstTimeModalProps) => {
           
           <div className="space-y-2 text-sm">
             <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 rounded-full border border-primary flex items-center justify-center">
-                {accepted && <Check className="h-3 w-3 text-primary" />}
-              </div>
-              <span>
-                <Link to="/privacy" className="text-primary hover:underline" onClick={onClose}>
-                  Privacy Policy
-                </Link> and <Link to="/terms" className="text-primary hover:underline" onClick={onClose}>
-                  Terms & Conditions
-                </Link>
-              </span>
+              <Checkbox 
+                id="terms" 
+                checked={accepted} 
+                onCheckedChange={toggleAccepted}
+              />
+              <label htmlFor="terms">
+                <span>
+                  <Link to="/privacy" className="text-primary hover:underline" onClick={onClose}>
+                    Privacy Policy
+                  </Link> and <Link to="/terms" className="text-primary hover:underline" onClick={onClose}>
+                    Terms & Conditions
+                  </Link>
+                </span>
+              </label>
             </div>
           </div>
           
@@ -57,7 +66,11 @@ const FirstTimeModal = ({ onAccept, onClose }: FirstTimeModalProps) => {
         </div>
         
         <AlertDialogFooter className="flex flex-col space-y-2">
-          <Button className="w-full" onClick={handleAccept}>
+          <Button 
+            className="w-full" 
+            onClick={handleAccept}
+            disabled={!accepted}
+          >
             Accept & Continue
           </Button>
           <Button variant="ghost" className="w-full" onClick={() => window.close()}>

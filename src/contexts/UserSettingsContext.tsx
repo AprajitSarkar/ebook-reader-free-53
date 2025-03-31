@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { VoiceOption, speechService } from "@/services/speechService";
+import { toast } from "@/lib/toast";
 
 interface UserSettings {
   preferredVoice: VoiceOption | null;
@@ -11,6 +12,7 @@ interface UserSettingsContextType {
   settings: UserSettings;
   updateVoice: (voice: VoiceOption | null) => void;
   toggleOfflineMode: (enabled: boolean) => void;
+  testVoice: () => void;
 }
 
 const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
@@ -21,6 +23,8 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
       useOfflineVoice: false
     };
   });
+
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   // Set a female voice by default when voices are available
   useEffect(() => {
@@ -62,6 +66,8 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       }
+      
+      setVoicesLoaded(true);
     };
 
     // Try to set immediately
@@ -71,7 +77,7 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
     if (window.speechSynthesis) {
       // Add multiple attempts to load voices on mobile
       let attempts = 0;
-      const maxAttempts = 5;
+      const maxAttempts = 10; // Increased max attempts
       
       const tryLoadingVoices = () => {
         const voices = speechService.getVoices();
@@ -80,9 +86,20 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
         } else if (attempts < maxAttempts) {
           attempts++;
           setTimeout(tryLoadingVoices, 1000);
+        } else if (attempts === maxAttempts) {
+          console.log("Failed to load voices after maximum attempts");
+          
+          // Even if we failed, we need to set the loaded state
+          setVoicesLoaded(true);
+          
+          // For Android devices, show a toast about voice issues
+          if (/Android/i.test(navigator.userAgent)) {
+            toast.warning("Voice synthesis may not work properly on this device. Try switching to System Default voice");
+          }
         }
       };
       
+      // Set up voice change event
       window.speechSynthesis.onvoiceschanged = () => {
         console.log("Voices changed event fired");
         setDefaultFemaleVoice();
@@ -90,6 +107,15 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
       
       // Start attempting to load voices
       tryLoadingVoices();
+      
+      // For Android, try the workaround to trigger voice loading
+      if (/Android/i.test(navigator.userAgent)) {
+        setTimeout(() => {
+          const dummyUtterance = new SpeechSynthesisUtterance("");
+          window.speechSynthesis.speak(dummyUtterance);
+          window.speechSynthesis.cancel();
+        }, 500);
+      }
     }
 
     return () => {
@@ -106,6 +132,15 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateVoice = (voice: VoiceOption | null) => {
     console.log("Updating voice to:", voice?.name || "null");
     setSettings(prev => ({ ...prev, preferredVoice: voice }));
+    
+    // Test the new voice
+    if (voice) {
+      const speechVoice = window.speechSynthesis.getVoices().find(v => v.voiceURI === voice.id) || null;
+      if (speechVoice) {
+        console.log("Testing new voice:", speechVoice.name);
+        speechService.speak("This is a test of the selected voice.", speechVoice);
+      }
+    }
   };
   
   const toggleOfflineMode = (enabled: boolean) => {
@@ -128,9 +163,23 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
+  
+  const testVoice = () => {
+    const allVoices = window.speechSynthesis.getVoices();
+    console.log(`Running voice test with ${allVoices.length} system voices available`);
+    
+    if (settings.preferredVoice) {
+      console.log("Testing with preferred voice:", settings.preferredVoice.name);
+      const voiceToUse = allVoices.find(v => v.voiceURI === settings.preferredVoice?.id) || null;
+      speechService.speak("This is a test of the text-to-speech functionality.", voiceToUse);
+    } else {
+      console.log("No preferred voice selected, using system default");
+      speechService.speak("This is a test of the text-to-speech functionality.", null);
+    }
+  };
 
   return (
-    <UserSettingsContext.Provider value={{ settings, updateVoice, toggleOfflineMode }}>
+    <UserSettingsContext.Provider value={{ settings, updateVoice, toggleOfflineMode, testVoice }}>
       {children}
     </UserSettingsContext.Provider>
   );

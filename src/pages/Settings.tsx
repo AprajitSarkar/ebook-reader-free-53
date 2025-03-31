@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Volume2, Moon, Info, BookOpen, Shield, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Volume2, Moon, Info, BookOpen, Shield, FileText, ExternalLink, Play } from "lucide-react";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 import { VoiceOption, speechService } from "@/services/speechService";
 import { toast } from "@/lib/toast";
@@ -14,14 +14,41 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { settings, updateVoice, toggleOfflineMode } = useUserSettings();
+  const { settings, updateVoice, toggleOfflineMode, testVoice } = useUserSettings();
   const [allVoices, setAllVoices] = useState<VoiceOption[]>(speechService.getVoices());
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
 
+  useEffect(() => {
+    const checkForVoices = () => {
+      const voices = speechService.getVoices();
+      if (voices.length > allVoices.length) {
+        console.log(`Voice count changed from ${allVoices.length} to ${voices.length}`);
+        setAllVoices(voices);
+      }
+    };
+    
+    const intervalId = setInterval(checkForVoices, 1000);
+    
+    if (/Android/i.test(navigator.userAgent)) {
+      const dummyUtterance = new SpeechSynthesisUtterance("");
+      window.speechSynthesis.speak(dummyUtterance);
+      window.speechSynthesis.cancel();
+      
+      setTimeout(checkForVoices, 500);
+    }
+    
+    return () => clearInterval(intervalId);
+  }, [allVoices.length]);
+
   const handleVoiceChange = (voiceId: string) => {
-    const selectedVoice = allVoices.find(voice => voice.id === voiceId) || null;
-    updateVoice(selectedVoice);
-    toast.success(`Voice updated to ${selectedVoice?.name || "Default"}`);
+    if (voiceId === "default") {
+      updateVoice(null);
+      toast.success("Voice updated to System Default");
+    } else {
+      const selectedVoice = allVoices.find(voice => voice.id === voiceId) || null;
+      updateVoice(selectedVoice);
+      toast.success(`Voice updated to ${selectedVoice?.name || "Default"}`);
+    }
   };
 
   const handleOfflineToggle = (enabled: boolean) => {
@@ -29,9 +56,13 @@ const Settings = () => {
     toast.success(`Offline mode ${enabled ? "enabled" : "disabled"}`);
   };
 
+  const handleTestVoice = () => {
+    testVoice();
+    toast.info("Testing voice...");
+  };
+
   const clearAllUserData = () => {
     try {
-      // Clear all local storage data
       localStorage.removeItem("likedPoems");
       localStorage.removeItem("likedBooks");
       localStorage.removeItem("searchHistory");
@@ -44,9 +75,11 @@ const Settings = () => {
     }
   };
 
-  // Group voices by provider for better organization
   const googleVoices = allVoices.filter(voice => voice.name.includes("Google"));
   const otherVoices = allVoices.filter(voice => !voice.name.includes("Google"));
+  
+  const onlineVoices = allVoices.filter(voice => voice.isOnlineOnly);
+  const offlineVoices = allVoices.filter(voice => !voice.isOnlineOnly);
   
   return (
     <div className="container max-w-3xl mx-auto px-4 py-5 pb-28">
@@ -61,7 +94,6 @@ const Settings = () => {
       </div>
       
       <div className="space-y-6">
-        {/* Text-to-Speech Settings */}
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -85,11 +117,11 @@ const Settings = () => {
                 <SelectContent>
                   <SelectItem value="default">System Default</SelectItem>
                   
-                  {googleVoices.length > 0 && (
+                  {offlineVoices.length > 0 && (
                     <>
                       <Separator className="my-1" />
-                      <div className="px-2 py-1 text-xs text-muted-foreground">Google Voices</div>
-                      {googleVoices.map(voice => (
+                      <div className="px-2 py-1 text-xs text-muted-foreground">Offline Voices</div>
+                      {offlineVoices.map(voice => (
                         <SelectItem 
                           key={voice.id} 
                           value={voice.id}
@@ -100,11 +132,11 @@ const Settings = () => {
                     </>
                   )}
                   
-                  {otherVoices.length > 0 && (
+                  {onlineVoices.length > 0 && (
                     <>
                       <Separator className="my-1" />
-                      <div className="px-2 py-1 text-xs text-muted-foreground">Other Voices</div>
-                      {otherVoices.map(voice => (
+                      <div className="px-2 py-1 text-xs text-muted-foreground">Online Voices</div>
+                      {onlineVoices.map(voice => (
                         <SelectItem 
                           key={voice.id} 
                           value={voice.id}
@@ -120,6 +152,16 @@ const Settings = () => {
               <div className="text-xs text-muted-foreground mt-1">
                 Selected: {settings.preferredVoice?.name || "System Default"}
               </div>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={handleTestVoice}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Test Voice
+              </Button>
             </div>
             
             <div className="flex items-center justify-between">
@@ -138,7 +180,6 @@ const Settings = () => {
           </CardContent>
         </Card>
         
-        {/* App Information */}
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -202,7 +243,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* User Data */}
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
