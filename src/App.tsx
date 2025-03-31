@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,6 +44,7 @@ const App = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showOfflineNotice, setShowOfflineNotice] = useState(false);
   const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+  const [adsInitialized, setAdsInitialized] = useState(false);
 
   const hideSplash = () => {
     console.log("Splash screen completed, showing main app");
@@ -94,7 +96,7 @@ const App = () => {
         try {
           console.log("Initializing ads");
           await adService.initialize();
-          await adService.showBanner();
+          setAdsInitialized(true);
           console.log("Ads initialized successfully");
         } catch (error) {
           console.error('Error initializing ads:', error);
@@ -112,16 +114,6 @@ const App = () => {
       }
     };
   }, [showSplash]);
-
-  useEffect(() => {
-    if (window.location.pathname.includes("privacy") || window.location.pathname.includes("terms")) {
-      setShowSplash(false);
-    }
-  }, []);
-
-  if (!isLoaded) {
-    return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading...</div>;
-  }
 
   const handleOfflineRetry = () => {
     if (navigator.onLine) {
@@ -147,7 +139,7 @@ const App = () => {
                 </div>
               ) : (
                 <>
-                  <div className="pb-24">
+                  <div className="pb-20">
                     <Routes>
                       <Route path="/" element={<Navigate to="/books" replace />} />
                       <Route path="/poems" element={<Poems />} />
@@ -164,7 +156,10 @@ const App = () => {
                     </Routes>
                   </div>
                   {!window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
-                    <Navbar />
+                    <>
+                      <div id="ad-container" className="mb-16"></div>
+                      <Navbar />
+                    </>
                   )}
                 </>
               )}

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { VoiceOption, speechService } from "@/services/speechService";
 
@@ -25,12 +26,15 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const setDefaultFemaleVoice = () => {
       if (!settings.preferredVoice) {
+        console.log("Setting default voice - current voices count:", speechService.getVoices().length);
+        
         // Try to get Google voices first if not in offline mode
         if (!settings.useOfflineVoice) {
           const googleVoices = speechService.getGoogleVoices();
           const femaleGoogleVoice = googleVoices.find(voice => voice.gender === "female");
           
           if (femaleGoogleVoice) {
+            console.log("Setting Google female voice:", femaleGoogleVoice.name);
             setSettings(prev => ({ ...prev, preferredVoice: femaleGoogleVoice }));
             return;
           }
@@ -41,6 +45,7 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
         const femaleVoice = preferredVoices.find(voice => voice.gender === "female");
         
         if (femaleVoice) {
+          console.log("Setting preferred female voice:", femaleVoice.name);
           setSettings(prev => ({ ...prev, preferredVoice: femaleVoice }));
         } else {
           // Fall back to any female voice
@@ -48,7 +53,12 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
           const anyFemaleVoice = allVoices.find(voice => voice.gender === "female");
           
           if (anyFemaleVoice) {
+            console.log("Setting any female voice:", anyFemaleVoice.name);
             setSettings(prev => ({ ...prev, preferredVoice: anyFemaleVoice }));
+          } else if (allVoices.length > 0) {
+            // Fall back to first available voice if no female voice is found
+            console.log("No female voices found, using first available voice:", allVoices[0].name);
+            setSettings(prev => ({ ...prev, preferredVoice: allVoices[0] }));
           }
         }
       }
@@ -59,7 +69,27 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
 
     // Also set up a listener for when voices are loaded asynchronously
     if (window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = setDefaultFemaleVoice;
+      // Add multiple attempts to load voices on mobile
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      const tryLoadingVoices = () => {
+        const voices = speechService.getVoices();
+        if (voices.length > 0) {
+          setDefaultFemaleVoice();
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryLoadingVoices, 1000);
+        }
+      };
+      
+      window.speechSynthesis.onvoiceschanged = () => {
+        console.log("Voices changed event fired");
+        setDefaultFemaleVoice();
+      };
+      
+      // Start attempting to load voices
+      tryLoadingVoices();
     }
 
     return () => {
@@ -74,19 +104,27 @@ const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [settings]);
 
   const updateVoice = (voice: VoiceOption | null) => {
+    console.log("Updating voice to:", voice?.name || "null");
     setSettings(prev => ({ ...prev, preferredVoice: voice }));
   };
   
   const toggleOfflineMode = (enabled: boolean) => {
+    console.log("Setting offline mode to:", enabled);
     setSettings(prev => ({ ...prev, useOfflineVoice: enabled }));
     
     // If enabling offline mode, try to select an offline voice
     if (enabled) {
       const offlineVoices = speechService.getOfflineVoices();
+      console.log("Available offline voices:", offlineVoices.length);
+      
       const femaleOfflineVoice = offlineVoices.find(voice => voice.gender === "female");
       
       if (femaleOfflineVoice) {
+        console.log("Setting offline female voice:", femaleOfflineVoice.name);
         setSettings(prev => ({ ...prev, preferredVoice: femaleOfflineVoice, useOfflineVoice: true }));
+      } else if (offlineVoices.length > 0) {
+        console.log("No female offline voice found, using first available:", offlineVoices[0].name);
+        setSettings(prev => ({ ...prev, preferredVoice: offlineVoices[0], useOfflineVoice: true }));
       }
     }
   };
