@@ -13,15 +13,20 @@ const BANNER_ID = {
 };
 
 const INTERSTITIAL_ID = {
-  android: 'ca-app-pub-3279473081670891/1003101920', // Using banner ID until an interstitial is created
-  ios: 'ca-app-pub-3279473081670891/1003101920',
+  android: 'ca-app-pub-3279473081670891/4073916578', // Updated interstitial ID
+  ios: 'ca-app-pub-3279473081670891/4073916578', // Using the same ID for iOS for now
 };
+
+// Track content opens for interstitial ads
+let contentOpenCount = 0;
+const INTERSTITIAL_FREQUENCY = 2; // Show interstitial every X content opens
 
 interface AdMobService {
   initialize: () => Promise<void>;
   showBanner: () => Promise<void>;
   removeBanner: () => Promise<void>;
   showInterstitial: () => Promise<void>;
+  trackContentOpen: () => Promise<void>;
 }
 
 export const adService: AdMobService = {
@@ -55,7 +60,7 @@ export const adService: AdMobService = {
           adId: platform === 'android' ? BANNER_ID.android : BANNER_ID.ios,
           adSize: BannerAdSize.ADAPTIVE_BANNER,
           position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 56, // Increased margin to position well above the navbar (16px navbar + 40px for safety)
+          margin: 60, // Increased margin to position well above the navbar for better visibility
           isTesting: false // Set to true for testing
         };
         
@@ -107,4 +112,20 @@ export const adService: AdMobService = {
     }
     return Promise.resolve();
   },
+
+  // New method to track content opens and show interstitial ads when needed
+  trackContentOpen: async () => {
+    contentOpenCount += 1;
+    console.log(`Content opened ${contentOpenCount} times`);
+    
+    // Show interstitial every INTERSTITIAL_FREQUENCY content opens
+    if (contentOpenCount % INTERSTITIAL_FREQUENCY === 0) {
+      try {
+        await adService.showInterstitial();
+      } catch (error) {
+        console.error("Error showing frequency-based interstitial:", error);
+      }
+    }
+    return Promise.resolve();
+  }
 };

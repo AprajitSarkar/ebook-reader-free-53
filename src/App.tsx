@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { adService } from "@/services/adService";
@@ -37,6 +37,21 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// RouteTracker component to track navigation and show ads
+const RouteTracker = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Check if the current route is a content detail page
+    if (location.pathname === '/poem-details' || location.pathname === '/book-details') {
+      // Track content open for ad frequency
+      adService.trackContentOpen().catch(console.error);
+    }
+  }, [location.pathname]);
+  
+  return null;
+};
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -92,11 +107,13 @@ const App = () => {
     console.log("App component mounted");
     
     const initAds = async () => {
-      if (Capacitor.getPlatform() === 'android') {
+      if (Capacitor.isNativePlatform()) {
         try {
           console.log("Initializing ads");
           await adService.initialize();
           setAdsInitialized(true);
+          // Show banner ad after initialization
+          await adService.showBanner();
           console.log("Ads initialized successfully");
         } catch (error) {
           console.error('Error initializing ads:', error);
@@ -109,7 +126,7 @@ const App = () => {
     }
     
     return () => {
-      if (Capacitor.getPlatform() === 'android') {
+      if (Capacitor.isNativePlatform()) {
         adService.removeBanner().catch(console.error);
       }
     };
@@ -154,10 +171,13 @@ const App = () => {
                       <Route path="/terms" element={<TermsConditions />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    {/* Add RouteTracker to monitor route changes and show ads */}
+                    <RouteTracker />
                   </div>
                   {!window.location.pathname.includes("privacy") && !window.location.pathname.includes("terms") && (
                     <>
-                      <div id="ad-container" className="mb-16"></div>
+                      {/* Add padding to ensure space for both the ad and navbar */}
+                      <div id="ad-container" className="mb-20"></div>
                       <Navbar />
                     </>
                   )}
