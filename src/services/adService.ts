@@ -24,8 +24,8 @@ const initialize = async () => {
   }
 
   try {
-    // Dynamically import the AdMob plugin
-    const { AdMob } = await import('@capacitor/admob');
+    // Dynamically import the AdMob plugin (using the community version)
+    const { AdMob } = await import('@capacitor-community/admob');
 
     // Initialize AdMob
     await AdMob.initialize({
@@ -51,7 +51,7 @@ const showBanner = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     
     await AdMob.showBanner({
       adId: adUnits.banner,
@@ -72,7 +72,7 @@ const removeBanner = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     await AdMob.removeBanner();
     console.log('Banner ad removed');
   } catch (error) {
@@ -87,7 +87,7 @@ const preloadInterstitial = async () => {
   isLoadingInterstitial = true;
   
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     
     await AdMob.prepareInterstitial({
       adId: adUnits.interstitial,
@@ -106,7 +106,7 @@ const showInterstitial = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     
     const { isReady } = await AdMob.isInterstitialReady();
     
@@ -132,7 +132,7 @@ const preloadAppOpenAd = async () => {
   isLoadingAppOpen = true;
   
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     
     await AdMob.prepareRewardedInterstitial({
       adId: adUnits.appOpen,
@@ -151,7 +151,7 @@ const showAppOpenAd = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const { AdMob } = await import('@capacitor/admob');
+    const { AdMob } = await import('@capacitor-community/admob');
     
     const { isReady } = await AdMob.isRewardedInterstitialReady();
     
