@@ -19,21 +19,50 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   
+  // Load voice options
   useEffect(() => {
     // Set mounted to true to prevent hydration issues
     setMounted(true);
     
-    // Load voice options
-    setTimeout(() => {
+    let isMounted = true;
+    
+    const loadVoices = () => {
       try {
+        console.log("Loading voice options in Settings");
         const voices = speechService.getVoices();
-        setVoiceOptions(voices);
+        if (isMounted) {
+          console.log(`Found ${voices.length} voices in Settings`);
+          setVoiceOptions(voices);
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error("Error loading voices:", error);
-      } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    }, 500);
+    };
+
+    // Initial load
+    loadVoices();
+    
+    // Setup listener for voices changed event
+    if (window.speechSynthesis) {
+      const onVoicesChanged = () => {
+        console.log("Voices changed event detected in Settings");
+        loadVoices();
+      };
+      
+      window.speechSynthesis.onvoiceschanged = onVoicesChanged;
+    }
+    
+    return () => {
+      isMounted = false;
+      // Clean up listener
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, []);
 
   const handleVoiceChange = (value: string) => {
@@ -68,7 +97,7 @@ const Settings = () => {
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold gradient-text">Settings</h1>
+          <h1 className="text-2xl font-bold">Settings</h1>
         </div>
       </div>
 
