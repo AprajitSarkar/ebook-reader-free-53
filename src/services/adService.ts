@@ -27,9 +27,9 @@ const initialize = async () => {
     // Dynamically import the AdMob plugin (using the community version)
     const { AdMob } = await import('@capacitor-community/admob');
 
-    // Initialize AdMob
+    // Initialize AdMob with corrected options
     await AdMob.initialize({
-      requestTrackingAuthorization: true,
+      // Remove requestTrackingAuthorization which is not supported
       testingDevices: ['EMULATOR'],
       initializeForTesting: false,
     });
@@ -51,14 +51,14 @@ const showBanner = async () => {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const { AdMob } = await import('@capacitor-community/admob');
+    const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
     
     await AdMob.showBanner({
       adId: adUnits.banner,
-      position: 'BOTTOM_CENTER',
-      // For Google AdMob
-      adSize: 'ADAPTIVE_BANNER',
+      position: BannerAdPosition.BOTTOM_CENTER,
       margin: 0,
+      // For Google AdMob
+      adSize: BannerAdSize.ADAPTIVE_BANNER,
     });
     
     console.log('Banner ad shown successfully');
@@ -108,7 +108,9 @@ const showInterstitial = async () => {
   try {
     const { AdMob } = await import('@capacitor-community/admob');
     
-    const { isReady } = await AdMob.isInterstitialReady();
+    // Use the correct method to check if interstitial is ready
+    const result = await AdMob.isLoadedInterstitial();
+    const isReady = result.isLoaded;
     
     if (isReady) {
       await AdMob.showInterstitial();
@@ -116,16 +118,19 @@ const showInterstitial = async () => {
       
       // Preload the next interstitial
       setTimeout(preloadInterstitial, 1000);
+      return true;
     } else {
       console.log('Interstitial ad not ready, trying to load one');
       await preloadInterstitial();
+      return false;
     }
   } catch (error) {
     console.error('Error showing interstitial ad:', error);
+    return false;
   }
 };
 
-// Preload an app open ad
+// Preload an app open ad (using regular interstitial since app open ads aren't directly supported)
 const preloadAppOpenAd = async () => {
   if (!Capacitor.isNativePlatform() || isLoadingAppOpen) return;
   
@@ -134,7 +139,8 @@ const preloadAppOpenAd = async () => {
   try {
     const { AdMob } = await import('@capacitor-community/admob');
     
-    await AdMob.prepareRewardedInterstitial({
+    // Use prepareInterstitial instead of prepareRewardedInterstitial
+    await AdMob.prepareInterstitial({
       adId: adUnits.appOpen,
     });
     
@@ -153,10 +159,13 @@ const showAppOpenAd = async () => {
   try {
     const { AdMob } = await import('@capacitor-community/admob');
     
-    const { isReady } = await AdMob.isRewardedInterstitialReady();
+    // Use the correct method to check if interstitial is ready
+    const result = await AdMob.isLoadedInterstitial();
+    const isReady = result.isLoaded;
     
     if (isReady) {
-      await AdMob.showRewardedInterstitial();
+      // Use showInterstitial instead of showRewardedInterstitial
+      await AdMob.showInterstitial();
       console.log('App Open ad shown successfully');
       
       // Preload the next app open ad

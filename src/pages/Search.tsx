@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { poetryService, Poem } from "@/services/poetryService";
@@ -28,7 +27,6 @@ const Search = () => {
   const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
 
-  // Load search history on component mount
   useEffect(() => {
     const history = localStorage.getItem("searchHistory");
     if (history) {
@@ -42,7 +40,6 @@ const Search = () => {
     setLoading(true);
     setHasSearched(true);
     
-    // Add to search history
     const updatedHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 10);
     setSearchHistory(updatedHistory);
     localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
@@ -119,18 +116,16 @@ const Search = () => {
               .slice(0, 5);
             break;
           case "author":
-            const authorResult = await poetryService.getAuthors();
-            suggestionResults = authorResult.authors
+            const authors = await poetryService.getAuthors();
+            suggestionResults = authors
               .filter(author => author.toLowerCase().includes(query.toLowerCase()))
               .slice(0, 5);
             break;
           case "lines":
-            // For lines search, we don't have a pre-existing list
             suggestionResults = [query];
             break;
         }
       } else {
-        // For books, we don't have a pre-existing list of suggestions
         suggestionResults = [query];
       }
       
@@ -142,7 +137,6 @@ const Search = () => {
     }
   };
 
-  // Handle query changes with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentQuery) {
@@ -150,12 +144,11 @@ const Search = () => {
       } else {
         setSuggestions([]);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [currentQuery, searchType, contentType]);
 
-  // Reset suggestions when search type changes
   useEffect(() => {
     setSuggestions([]);
     setCurrentQuery("");

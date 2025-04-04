@@ -53,6 +53,65 @@ const getRandomPoems = async (count: number = 5): Promise<Poem[]> => {
   }
 };
 
+// Get a list of titles
+const getTitles = async (): Promise<{ titles: string[] }> => {
+  try {
+    const response = await fetch(`${API_URL}/title`);
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching titles:", error);
+    throw error;
+  }
+};
+
+// Search poems by title
+const searchByTitle = async (query: string): Promise<Poem[]> => {
+  try {
+    const response = await fetch(`${API_URL}/title/${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      return [];
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error searching poems by title ${query}:`, error);
+    return [];
+  }
+};
+
+// Search poems by author
+const searchByAuthor = async (query: string): Promise<Poem[]> => {
+  try {
+    const response = await fetch(`${API_URL}/author/${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      return [];
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error searching poems by author ${query}:`, error);
+    return [];
+  }
+};
+
+// Search poems by lines
+const searchByLines = async (query: string): Promise<Poem[]> => {
+  try {
+    const response = await fetch(`${API_URL}/lines/${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      return [];
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error searching poems by lines ${query}:`, error);
+    return [];
+  }
+};
+
 // Search poems by title, author, or lines
 const searchPoems = async (query: string): Promise<Poem[]> => {
   try {
@@ -62,7 +121,7 @@ const searchPoems = async (query: string): Promise<Poem[]> => {
     
     if (response.ok) {
       const titlePoems = await response.json();
-      if (!Array.isArray(titlePoems) || titlePoems.status === 404) {
+      if (!Array.isArray(titlePoems)) {
         // No results by title
       } else {
         poems = poems.concat(titlePoems);
@@ -73,7 +132,7 @@ const searchPoems = async (query: string): Promise<Poem[]> => {
     response = await fetch(`${API_URL}/author/${encodeURIComponent(query)}`);
     if (response.ok) {
       const authorPoems = await response.json();
-      if (!Array.isArray(authorPoems) || authorPoems.status === 404) {
+      if (!Array.isArray(authorPoems)) {
         // No results by author
       } else {
         // Add author poems without duplicating ones we already have by title
@@ -89,7 +148,7 @@ const searchPoems = async (query: string): Promise<Poem[]> => {
     response = await fetch(`${API_URL}/lines/${encodeURIComponent(query)}`);
     if (response.ok) {
       const linePoems = await response.json();
-      if (!Array.isArray(linePoems) || linePoems.status === 404) {
+      if (!Array.isArray(linePoems)) {
         // No results by lines
       } else {
         // Add line poems without duplicating ones we already have
@@ -115,5 +174,9 @@ export const poetryService = {
   getAuthors,
   getPoemsByAuthor,
   getRandomPoems,
-  searchPoems
+  searchPoems,
+  getTitles,
+  searchByTitle,
+  searchByAuthor,
+  searchByLines
 };
